@@ -22,6 +22,31 @@
 # ]
 # ==================================================
 
+def getSensorRecResult():
+    sensorRecResult = [
+    {
+        "propName": "people_ibjured",
+        "compName": "Find_Injured_Person",
+        # "compPath": "",
+        "usage": "Directly Use"
+    }
+    ]
+    return sensorRecResult
+
+def getActionRecResult():
+    actionRecResult = [
+    {
+        "propName": "attack",
+        "compName": "Attack",
+        "compPath": "",
+        "usage": "Modified Before Use"
+    }
+    ]
+    return actionRecResult
+
+
+
+
 class Component:
     def __init__(self) -> None:
         self.name = None
@@ -61,10 +86,13 @@ class Component:
     def dependentCompCalcu(self):
         pass
 
-class sensorCompList:
+class SensorCompList:
     def __init__(self) -> None:
         self.compLibDirectory = None
-        self.sensorCompList = []
+        self.compList = []
+    def setCompLibDirectory(self, directory):
+        # print('Set Comp Lib Directory', directory)
+        self.compLibDirectory = directory
     def load(self, sensorRecResult):
         for compInfo in sensorRecResult:
             sensorComp = Component()
@@ -72,12 +100,14 @@ class sensorCompList:
             sensorComp.setType('sensor')
             sensorComp.setUsage(compInfo['usage'])
             sensorComp.setMap2Prop(compInfo['propName'])
-            sensorComp.setCompDirectory(os.path.join(self.sensorCompList, compInfo['compName']))
-            self.sensorCompList.append(sensorComp)
-        return self.sensorCompList
+            sensorComp.setCompDirectory(os.path.join(self.compLibDirectory, compInfo['compName']))
+            self.compList.append(sensorComp)
+        return self.compList
 
-class actionCompList:
+class ActionCompList:
     def __init__(self) -> None:
+        pass
+    def setCompLibDirectory(self, directory):
         pass
     def load(self, actionRecResult):
         pass
@@ -112,21 +142,49 @@ class ReactiveArch:
         pass
     def loadExecute(self):
         pass
-    def connect2Arch(self):
+    def loadConnect2Arch(self, sensorCompList, actionCompList):
         pass
 
     
 class BasicSoftware:
     def __init__(self) -> None:
-        pass
-    def loadSensorCompList(self, sensorRecResult):
-        pass
-    def loadActionCompList(self, actionRecResult):
-        pass
+        self.sensorCompList = None
+        self.actionCompList = None
+    def loadSensorCompList(self, sensorRecResult, compLibDirectory):
+        self.sensorCompList = SensorCompList()
+        self.sensorCompList.setCompLibDirectory(compLibDirectory)
+        self.sensorCompList.load(sensorRecResult)
+        return self.sensorCompList
+    def loadActionCompList(self, actionRecResult, compLibDirectory):
+        self.actionCompList = ActionCompList()
+        self.actionCompList.setCompLibDirectory(compLibDirectory)
+        self.actionCompList.load(actionRecResult)
+        return self.actionCompList
     def loadArch(self, archName):
+        if archName == 'reactive':
+            reactiveArch = ReactiveArch()
+            reactiveArch.setArchDirectory(r'./Template/Architecture/ReactiveArch')
+            reactiveArch.loadTask()
+            reactiveArch.loadCollect()
+            reactiveArch.loadProcess()
+            reactiveArch.loadDiagnose()
+            reactiveArch.loadCore()
+            reactiveArch.loadCalculate()
+            reactiveArch.loadControl()
+            reactiveArch.loadExecute()
+            reactiveArch.loadConnect2Arch(self.sensorCompList, self.actionCompList)
         pass
     
     
+if __name__ == '__main__':
+    compLibDirectory = r'./Template/Component/'
+    basicSoftware = BasicSoftware()
+    sensorCompList = basicSoftware.loadSensorCompList(getSensorRecResult(), compLibDirectory)
+    actionCompList = basicSoftware.loadActionCompList(getActionRecResult(), compLibDirectory)
+    print(sensorCompList.compList[0].compDirectory)
+    print(actionCompList)
+    
+    # print(os.path.join(compLibDirectory, 'abc'))
 # def loadHppFile(filePath):
 #     pass
 
