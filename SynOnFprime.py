@@ -72,20 +72,41 @@ class Component:
     def setCompDirectory(self, directory):
         self.compDirectory = directory
     def loadCppFile(self):
-        pass
+        filePath = os.path.join(self.compDirectory, self.name + '.cpp')
+        with open(filePath, 'r') as f:
+            self.cppFile = f.read()
+        return self.cppFile
+
     def loadHppFile(self):
-        pass
+        filePath = os.path.join(self.compDirectory, self.name + '.hpp')
+        with open(filePath, 'r') as f:
+            self.hppFile = f.read()
+        return self.hppFile
+        
     def loadFppFile(self):
-        pass
+        filePath = os.path.join(self.compDirectory, self.name + '.cpp')
+        with open(filePath, 'r') as f:
+            self.cppFile = f.read()
+        return self.cppFile
+        
     def loadCppTemplateFile(self):
-        pass
+        filePath = os.path.join(self.compDirectory, self.name + 'Cpp.tmpl')
+        with open(filePath, 'r') as f:
+            self.cppTemplateFile = f.read()
+        return self.cppTemplateFile
+        
     def loadHppTemplateFile(self):
-        pass
+        filePath = os.path.join(self.compDirectory, self.name + 'Hpp.tmpl')
+        with open(filePath, 'r') as f:
+            self.hppTemplateFile = f.read()
+        return self.hppTemplateFile
+
     def loadFppTemplateFile(self):
         filePath = os.path.join(self.compDirectory, self.name + 'Fpp.tmpl')
         with open(filePath, 'r') as f:
             self.fppTemplateFile = f.read()
         return self.fppTemplateFile
+    
     def dependentCompCalcu(self):
         pass
 
@@ -109,11 +130,22 @@ class SensorCompList:
 
 class ActionCompList:
     def __init__(self) -> None:
-        pass
+        self.compLibDirectory = None
+        self.compList = []
     def setCompLibDirectory(self, directory):
-        pass
+        self.compLibDirectory = directory
     def load(self, actionRecResult):
-        pass
+        for compInfo in actionCompList:
+            actionComp = Component()
+            actionComp.setName(compInfo['compName'])
+            actionComp.setType('action')
+            actionComp.setUsage(compInfo['usage'])
+            actionComp.setMap2Prop(compInfo['propName'])
+            actionComp.setCompDirectory(os.path.join(self.compLibDirectory, compInfo['compName']))
+            self.compList.append(actionComp)
+        return self.compList
+
+
     
 import os
 
@@ -121,6 +153,13 @@ class ReactiveArch:
     def __init__(self) -> None:
         self.archDirectory = None
         self.startComp = None
+        self.collectComp = None
+        self.processComp = None
+        self.diagnoseComp = None
+        self.coreComp = None
+        self.calculateComp = None
+        self.controlComp = None
+        self.executeComp = None
     def setArchDirectory(self, directory):
         self.archDirectory = directory
     def loadTask(self):
@@ -142,19 +181,75 @@ class ReactiveArch:
         self.startComp = startComp
         return self.startComp
     def loadCollect(self):
-        pass
+        self.collectPath = os.path.join(self.archDirectory, 'Collect')
+        collectComp = Component()
+        collectComp.setName('Collect')
+        collectComp.setCompDirectory(self.collectPath)
+        collectComp.loadHppFile()
+        collectComp.loadFppTemplateFile()
+        collectComp.loadCppTemplateFile()
+        self.collectComp = collectComp
+        return self.collectComp
     def loadProcess(self):
-        pass
+        self.processPath = os.path.join(self.archDirectory, 'Process')
+        processComp = Component()
+        processComp.setName('Process')
+        processComp.setCompDirectory(self.processPath)
+        processComp.loadHppFile()
+        processComp.loadFppTemplateFile()
+        processComp.loadCppTemplateFile()
+        self.processComp = processComp
+        return self.processComp
     def loadDiagnose(self):
-        pass
+        self.diagnosePath = os.path.join(self.archDirectory, 'Diagnose')
+        diagnoseComp = Component()
+        diagnoseComp.setName('Diagnose')
+        diagnoseComp.setCompDirectory(self.diagnosePath)
+        diagnoseComp.loadHppFile()
+        diagnoseComp.loadFppTemplateFile()
+        diagnoseComp.loadCppTemplateFile()
+        self.diagnoseComp = diagnoseComp
+        return self.diagnoseComp
     def loadCore(self):
-        pass
+        self.corePath = os.path.join(self.archDirectory, 'Core')
+        coreComp = Component()
+        coreComp.setName('Core')
+        coreComp.setCompDirectory(self.corePath)
+        coreComp.loadHppFile()
+        coreComp.loadFppFile()
+        coreComp.loadCppFile()
+        self.coreComp = coreComp
+        return self.coreComp
     def loadCalculate(self):
-        pass
+        self.calculatePath = os.path.join(self.archDirectory, 'Calculate')
+        calculateComp = Component()
+        calculateComp.setName('Calculate')
+        calculateComp.setCompDirectory(self.calculatePath)
+        calculateComp.loadHppFile()
+        calculateComp.loadFppTemplateFile()
+        calculateComp.loadCppTemplateFile()
+        self.calculateComp = calculateComp
+        return self.calculateComp
     def loadControl(self):
-        pass
+        self.controlPath = os.path.join(self.archDirectory, 'Control')
+        controlComp = Component()
+        controlComp.setName('Control')
+        controlComp.setCompDirectory(self.controlPath)
+        controlComp.loadHppFile()
+        controlComp.loadFppTemplateFile()
+        controlComp.loadCppTemplateFile()
+        self.controlComp = controlComp
+        return self.controlComp
     def loadExecute(self):
-        pass
+        self.executePath = os.path.join(self.archDirectory, 'Execute')
+        executeComp = Component()
+        executeComp.setName('Execute')
+        executeComp.setCompDirectory(self.executePath)
+        executeComp.loadHppFile()
+        executeComp.loadFppTemplateFile()
+        executeComp.loadCppTemplateFile()
+        self.executeComp = executeComp
+        return self.executeComp
     def loadConnect2Arch(self, sensorCompList, actionCompList):
         pass
 
