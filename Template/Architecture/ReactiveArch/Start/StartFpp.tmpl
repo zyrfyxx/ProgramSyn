@@ -1,0 +1,35 @@
+module Components {
+    port Start_Port() -> U8
+
+    @ Start component in skeleton
+    passive component Start {
+
+        #for $component in $sensorComps
+        output port ${component}_Start_Outport: Sensor.${component}_Start_Port
+        #end for
+
+        #for $component in $actionComps
+        output port ${component}_Start_Outport: Action.${component}_Start_Port
+        #end for
+
+
+        sync input port Start_Inport: Start_Port
+       
+        @ Port for requesting the current time
+        time get port timeCaller
+
+        @ Port for sending textual representation of events
+        text event port logTextOut
+
+        @ Port for sending events to downlink
+        event port logOut
+
+        @ Port for sending telemetry channels to downlink
+        telemetry port tlmOut
+
+        event START()\
+            severity activity low\
+            format "Start component start"
+
+    }
+}
