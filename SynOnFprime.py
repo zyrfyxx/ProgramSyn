@@ -72,6 +72,9 @@ class ReactiveArch:
         pass
     def loadExecute(self, filePath):
         pass
+    def connect2Arch(self):
+        pass
+
     
 class BasicSoftware:
     def __init__(self) -> None:
@@ -82,3 +85,4 @@ class BasicSoftware:
         pass
     def loadArch(self, archName):
         pass
+    
