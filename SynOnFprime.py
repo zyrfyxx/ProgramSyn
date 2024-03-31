@@ -63,6 +63,7 @@ class Component:
 
 class sensorCompList:
     def __init__(self) -> None:
+        self.compLibDirectory = None
         self.sensorCompList = []
     def load(self, sensorRecResult):
         for compInfo in sensorRecResult:
@@ -73,6 +74,7 @@ class sensorCompList:
             sensorComp.setMap2Prop(compInfo['propName'])
             sensorComp.setCompDirectory(os.path.join(self.sensorCompDirectory, compInfo['compName']))
             self.sensorCompList.append(sensorComp)
+        return self.sensorCompList
 
 class actionCompList:
     def __init__(self) -> None:
