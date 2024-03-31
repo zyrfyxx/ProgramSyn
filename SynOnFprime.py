@@ -72,7 +72,7 @@ class sensorCompList:
             sensorComp.setType('sensor')
             sensorComp.setUsage(compInfo['usage'])
             sensorComp.setMap2Prop(compInfo['propName'])
-            sensorComp.setCompDirectory(os.path.join(self.sensorCompDirectory, compInfo['compName']))
+            sensorComp.setCompDirectory(os.path.join(self.sensorCompList, compInfo['compName']))
             self.sensorCompList.append(sensorComp)
         return self.sensorCompList
 
