@@ -29,6 +29,12 @@ def getSensorRecResult():
         "compName": "Find_Injured_Person",
         # "compPath": "",
         "usage": "Directly Use"
+    },
+    {
+        "propName": "enemy_find",
+        "compName": "Find_Enemy",
+        # "compPath": "",
+        "usage": "Modified Before Use"
     }
     ]
     return sensorRecResult
@@ -40,6 +46,12 @@ def getActionRecResult():
         "compName": "Attack",
         "compPath": "",
         "usage": "Modified Before Use"
+    },
+    {
+        "propName": "send_signal",
+        "compName": "Send_Signal",
+        "compPath": "",
+        "usage": "Directly Use"
     }
     ]
     return actionRecResult
@@ -135,7 +147,7 @@ class ActionCompList:
     def setCompLibDirectory(self, directory):
         self.compLibDirectory = directory
     def load(self, actionRecResult):
-        for compInfo in actionCompList:
+        for compInfo in actionRecResult:
             actionComp = Component()
             actionComp.setName(compInfo['compName'])
             actionComp.setType('action')
@@ -250,6 +262,18 @@ class ReactiveArch:
         executeComp.loadCppTemplateFile()
         self.executeComp = executeComp
         return self.executeComp
+    def completeStartTmpl(self, sensorNameList, actionNameList):
+        file = Template(self.startComp.fppTemplateFile)
+        file.sensorComps = sensorNameList
+        file.actionComps = actionNameList
+        self.startComp.fppFile = file.__str__()
+    
+    def completeProcessTmpl(self, sensorNameList, actionNameList):
+        file = Template(self.processComp.fppTemplateFile)
+        file.sensorComps = sensorNameList
+        file.actionComps = actionNameList
+        self.processComp.fppFile = file.__str__()
+            
     def loadConnect2Arch(self, sensorCompList, actionCompList):
         pass
 
@@ -286,6 +310,7 @@ class BasicSoftware:
             self.archtecture = reactiveArch
         return self.archtecture
     
+    
 
 from Cheetah.Template import Template
 
@@ -294,13 +319,14 @@ if __name__ == '__main__':
     basicSoftware = BasicSoftware()
     sensorCompList = basicSoftware.loadSensorCompList(getSensorRecResult(), compLibDirectory)
     actionCompList = basicSoftware.loadActionCompList(getActionRecResult(), compLibDirectory)
-    
+    sensorNameList = [component.name for component in sensorCompList.compList]
+    actionNameList = [component.name for component in actionCompList.compList]
+    print(sensorNameList)
+    print(actionNameList)
     arch = basicSoftware.loadArch('reactive')
     print(arch.startComp.fppTemplateFile)
-    t1 = Template(arch.startComp.fppTemplateFile)
-    t1.sensorComps = ["Sensor1", "Sensor2"]
-    t1.actionComps = ["Action1", "Action2"]
-    print(t1)
+    arch.completeStartTmpl(sensorNameList, actionNameList)
+    print(arch.startComp.fppFile)
     
 
     
