@@ -273,6 +273,12 @@ class ReactiveArch:
         file.sensorComps = sensorNameList
         file.actionComps = actionNameList
         self.processComp.fppFile = file.__str__()
+    def completeExecuteTmpl(self, sensorNameList, actionNameList):
+        file = Template(self.executeComp.fppTemplateFile)
+        file.sensorComps = sensorNameList
+        file.actionComps = actionNameList
+        self.executeComp.fppFile = file.__str__()
+
             
     def loadConnect2Arch(self, sensorCompList, actionCompList):
         pass
