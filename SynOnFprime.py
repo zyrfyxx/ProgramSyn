@@ -430,8 +430,41 @@ class ReactiveArch:
     def loadArchInstances(self):
         pass
             
-    def loadConnectArch2Sensors(self, sensorCompList):
-        pass
+    def loadStart2Sensors(self, sensorCompList):
+        start2Sensors = []
+        for component in sensorCompList:
+            connection = CompConnection()
+            start2Sensors.append(connection.getSkeleton2SensorConnection("start", component.name+"Start_Output", component.name, component.startInput))
+        self.start2SensorConnections = start2Sensors
+        return self.start2SensorConnections
+            
+    def loadStart2Action2(self, actionCompList):
+        start2Actions = []
+        for component in actionCompList:
+            connection = CompConnection()
+            start2Actions.append(connection.getSkeleton2ActionConnection("start", component.name + "Start_Output", component.name, component.startInput))
+        self.start2ActionConnections = start2Actions
+        return self.start2ActionConnections
+    
+    def loadCollect2Sensors(self, sensorCompList):
+        collect2Sensors = []
+        for component in sensorCompList:
+            connection = CompConnection()
+            collect2Sensors.append(connection.getSkeleton2SensorConnection("collect", component.name+"Collect_Outport", component.name, component.collectInput))
+        self.collect2SensorConnections = collect2Sensors
+        return self.collect2SensorConnections
+    
+    def loadProcess2Sensors(self, sensorCompList):
+        process2Sensors = []
+        for component in sensorCompList:
+            connection = CompConnection()
+            process2Sensors.append(connection.getSkeleton2ActionConnection("process", component.name+"Process_Output", component.name, component.collectInput))
+        self.process2SensorConnections = process2Sensors
+        return self.process2SensorConnections
+
+
+
+
     
     def loadConnectArch2Actions(self, actionCompList):
         pass
