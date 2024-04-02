@@ -169,6 +169,7 @@ class CompInstance:
 class Component:
     def __init__(self) -> None:
         self.name = None
+        self.kind = None
         self.type = None
         self.usage = None
         self.map2prop = None
@@ -193,6 +194,8 @@ class Component:
         self.name = name
     def setType(self, type):
         self.type = type
+    def setKind(self, kind):
+        self.kind = kind
     def setUsage(self, usage):
         self.usage = usage
     def setMap2Prop(self, map2prop):
@@ -258,7 +261,7 @@ class SensorCompList:
             sensorComp = Component()
             sensorComp.setName(compInfo['compName'])
             sensorComp.loadInports()
-            sensorComp.setType('sensor')
+            sensorComp.setKind('sensor')
             sensorComp.setUsage(compInfo['usage'])
             sensorComp.setMap2Prop(compInfo['propName'])
             sensorComp.setCompDirectory(os.path.join(self.compLibDirectory, compInfo['compName']))
@@ -275,7 +278,7 @@ class ActionCompList:
         for compInfo in actionRecResult:
             actionComp = Component()
             actionComp.setName(compInfo['compName'])
-            actionComp.setType('action')
+            actionComp.setKind('action')
             actionComp.setUsage(compInfo['usage'])
             actionComp.setMap2Prop(compInfo['propName'])
             actionComp.setCompDirectory(os.path.join(self.compLibDirectory, compInfo['compName']))
@@ -300,6 +303,7 @@ class ReactiveArch:
         self.executeComp = None
         self.instanceList = ["task", "start", "collect", "process", "diagnose", "core", "calculate", "control", "execute"]
         self.connectionList = []
+        self.instanceList = []
     def setArchDirectory(self, directory):
         self.archDirectory = directory
     def loadTask(self):
@@ -420,7 +424,7 @@ class ReactiveArch:
     def loadConnectInArch(self):
         connection = CompConnection()
         self.task2StartConnection = connection.getSkeleton2Skeleton("task", "Start_Output", "start", "Start_Inport")
-        self.task2CollectionConnection = connection.getSkeleton2Skeleton("task", "Collect_Outport", "collect", "Collect_Inport")
+        self.task2CollectConnection = connection.getSkeleton2Skeleton("task", "Collect_Outport", "collect", "Collect_Inport")
         self.task2ProcessConnection = connection.getSkeleton2Skeleton("task", "Process_Outport","process", "Process_Inport")
         self.task2DiagnoseConnection = connection.getSkeleton2Skeleton("task", "Diagnose_Outport", "diagnose", "Diagnose_Inport")
         self.task2CoreConnection = connection.getSkeleton2Skeleton("task", "Core_Outport","core", "Core_Inport")
@@ -429,7 +433,15 @@ class ReactiveArch:
         self.core2ControlConnection = connection.getSkeleton2Skeleton("core", "Control_Output", "control", "COntrol_Inport")
     
     def loadArchInstances(self):
-        pass
+        compInstance = CompInstance()
+        self.taskInstance = compInstance.getActiveCompInstance("task", "Skeleton", "Task", "", "")
+        self.startInstance = compInstance.getPassiveCompInstance("start", "Skeleton", "Start", "")
+        self.collectInstance = compInstance.getPassiveCompInstance("collect", "Skeleton", "Collect", "")
+        self.processInstance = compInstance.getPassiveCompInstance("process", "Skeleton", "Process", "")
+        self.coreInstance = compInstance.getPassiveCompInstance("core", "Skeleton", "Core", "")
+        self.calculateInstance = compInstance.getPassiveCompInstance("calculate", "Skeleton", "Calculate", "")
+        self.controlInstance = compInstance.getPassiveCompInstance("control", "Skeleton", "Control", "")
+        self.executeInstance = compInstance.getPassiveCompInstance("execute", "Skeleton", "Execute", "")
             
     def loadStart2Sensors(self, sensorCompList):
         start2Sensors = []
@@ -514,9 +526,39 @@ class ReactiveArch:
         self.loadDiagnose2Actions(actionCompList)
         self.loadCalculate2Actions(actionCompList)
         self.loadExecute2Actions(actionCompList)
-    
+        self.connectionList.append(self.task2StartConnection)
+        self.connectionList.append(self.task2CollectConnection)
+        self.connectionList.append(self.task2ProcessConnection)
+        self.connectionList.append(self.task2DiagnoseConnection)
+        self.connectionList.append(self.task2CoreConnection)
+        self.connectionList.append(self.core2CalculateConnection)
+        self.connectionList.append(self.core2ControlConnection)
+        for i in self.start2SensorConnections:
+            self.connectionList.append(i)
+        for i in self.start2ActionConnections:
+            self.connectionList.append(i)
+        for i in self.collect2SensorConnections:
+            self.connectionList.append(i)
+        for i in self.process2SensorConnections:
+            self.connectionList.append(i)
+        for i in self.diagnose2SensorConnections:
+            self.connectionList.append(i)
+        for i in self.diagnose2ActionConnections:
+            self.connectionList.append(i)
+        for i in self.calculate2SensorConnections:
+            self.connectionList.append(i)
+        for i in self.calculate2ActionConnections:
+            self.connectionList.append(i)
+        for i in self.execute2ActionConnections:
+            self.connectionList.append(i)
+        return self.connectionList
 
-    
+
+def smallFirst(str):
+#写一个函数，将字符串的第一个变为小写
+    return str[0].lower() + str[1:]
+
+
 class BasicSoftware:
     def __init__(self) -> None:
         self.sensorCompList = None
@@ -532,6 +574,23 @@ class BasicSoftware:
         self.actionCompList.setCompLibDirectory(compLibDirectory)
         self.actionCompList.load(actionRecResult)
         return self.actionCompList
+    def loadSensorInstances(self):
+        self.sensorInstanceList = []
+        compInstance = CompInstance()
+        for i in self.sensorCompList:
+            instanceName = i.name[0].lower() + i.name[1:]
+            compModule = "Sensor"
+            compName = i.name
+            self.sensorInstanceList.append(compInstance.getPassiveCompInstance(instanceName, compModule, compName, ""))
+    def loadActionInstances(self):
+        self.actionInstanceList = []
+        compInstance = CompInstance()
+        for i in self.actionCompList:
+            instanceName = i.name[0].lower() + i.name[1:]
+            compModule = "Action"
+            compName = i.name
+            self.actionInstanceList.append(compInstance.getActiveCompInstance(instanceName, compModule, compName, ""))
+            
     def loadArch(self, archName):
         if archName == 'reactive':
             reactiveArch = ReactiveArch()
@@ -545,7 +604,8 @@ class BasicSoftware:
             reactiveArch.loadCalculate()
             reactiveArch.loadControl()
             reactiveArch.loadExecute()
-            reactiveArch.loadConnect2Arch(self.sensorCompList, self.actionCompList)
+            reactiveArch.loadConnections(self.sensorCompList, self.actionCompList)
+            reactiveArch.loadArchInstances()
             self.archtecture = reactiveArch
         return self.archtecture
     
