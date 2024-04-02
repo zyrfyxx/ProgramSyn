@@ -1,0 +1,33 @@
+module Skeleton {
+    port Calculate_Port() -> U8
+    @ Calculate component in skeleton
+    passive component Calculate {
+        #for component in $sensorComps
+        output port sensorcomp1_getdata_1_output: Sensor.SensorComp1_GetData_1
+        #for end
+
+        #for component in $actionComps
+        output port actioncomp1_setdata_1_output: Action.ActionComp1_SetData_1
+        #end for
+
+
+        sync input port Calculate_Inport: Calculate_Port
+
+        @ Port for requesting the current time
+        time get port timeCaller
+
+        @ Port for sending textual representation of events
+        text event port logTextOut
+
+        @ Port for sending events to downlink
+        event port logOut
+
+        @ Port for sending telemetry channels to downlink
+        telemetry port tlmOut
+
+        event CALCULATEALL()\
+            severity activity low\
+            format "Calculate component start"
+
+    }
+}

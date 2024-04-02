@@ -1,0 +1,28 @@
+\#include "Components/Process/Process.hpp"
+\#include "FpConfig.hpp"
+
+namespace Skeleton {
+
+  Process ::
+    Process(const char* const compName) :
+      ProcessComponentBase(compName)
+  {
+  }
+
+  Process ::
+    ~Process()
+  {
+  }
+
+  U8 Process ::
+    processall_handler(NATIVE_INT_TYPE portNum)
+  {
+    // TODO return
+    this->log_ACTIVITY_LO_PROCESSALL();
+    #for $component in $sensorComps
+    this->${component}_Process_Outport_out(0);
+    #end for
+    return 1;
+  }
+
+}

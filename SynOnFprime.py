@@ -299,6 +299,7 @@ class ReactiveArch:
         self.controlComp = None
         self.executeComp = None
         self.instanceList = ["task", "start", "collect", "process", "diagnose", "core", "calculate", "control", "execute"]
+        self.connectionList = []
     def setArchDirectory(self, directory):
         self.archDirectory = directory
     def loadTask(self):
@@ -458,16 +459,62 @@ class ReactiveArch:
         process2Sensors = []
         for component in sensorCompList:
             connection = CompConnection()
-            process2Sensors.append(connection.getSkeleton2ActionConnection("process", component.name+"Process_Output", component.name, component.collectInput))
+            process2Sensors.append(connection.getSkeleton2ActionConnection("process", component.name+"Process_Output", component.name, component.ProcessInput))
         self.process2SensorConnections = process2Sensors
         return self.process2SensorConnections
-
-
-
-
     
-    def loadConnectArch2Actions(self, actionCompList):
-        pass
+    def loadDiagnose2Sensors(self, sensorCompList):
+        diagnose2Sensors = []
+        for component in sensorCompList:
+            connection = CompConnection()
+            diagnose2Sensors.append(connection.getSkeleton2ActionConnection("diagnose", component.name+"Diagnose_Output", component.name, component.DiagnoseInput))
+        self.diagnose2SensorConnections = diagnose2Sensors
+        return self.diagnose2SensorConnections
+        
+    def loadDiagnose2Actions(self, actionCompList):
+        diagnose2Actions = []
+        for component in actionCompList:
+            connection = CompConnection()
+            diagnose2Actions.append(connection.getSkeleton2ActionConnection("diagnose", component.name+"Diagnose_Output", component.name, component.DiagnoseInput))
+        self.diagnose2ActionConnections = diagnose2Actions
+        return self.diagnose2ActionConnections
+    
+    def loadCalculate2Sensors(self, sensorCompList):
+        calculate2Sensors = []
+        for component in sensorCompList:
+            connection = CompConnection()
+            calculate2Sensors.append(connection.getSkeleton2ActionConnection("calculate", component.name+"Calculate_Output", component.name, component.CalculateInput))
+        self.calculate2SensorConnections = calculate2Sensors
+        return self.calculate2SensorConnections
+    
+    def loadCalculate2Actions(self, actionCompList):
+        calculate2Actions = []
+        for component in actionCompList:
+            connection = CompConnection()
+            calculate2Actions.append(connection.getSkeleton2ActionConnection("calculate", component.name+"Calculate_Output", component.name, component.CalculateInput))
+        self.calculate2ActionConnections = calculate2Actions
+        return self.calculate2ActionConnections
+    
+    def loadExecute2Actions(self, actionCompList):
+        execute2Actions = []
+        for component in actionCompList:
+            connection = CompConnection()
+            execute2Actions.append(connection.getSkeleton2ActionConnection("execute", component.name+"Execute_Output", component.name, component.ExecuteInput))
+        self.execute2ActionConnections = execute2Actions
+        return self.execute2ActionConnections
+    
+    def loadConnections(self, sensorCompList, actionCompList):
+        self.loadConnectInArch()
+        self.loadStart2Sensors(sensorCompList)
+        self.loadCollect2Sensors(sensorCompList)
+        self.loadProcess2Sensors(sensorCompList)
+        self.loadDiagnose2Sensors(sensorCompList)
+        self.loadCalculate2Sensors(sensorCompList)
+        self.loadStart2Action2(actionCompList)
+        self.loadDiagnose2Actions(actionCompList)
+        self.loadCalculate2Actions(actionCompList)
+        self.loadExecute2Actions(actionCompList)
+    
 
     
 class BasicSoftware:

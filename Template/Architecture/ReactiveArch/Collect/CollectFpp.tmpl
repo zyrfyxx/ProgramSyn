@@ -1,0 +1,28 @@
+module Skeleton {
+    port Collect_Port() -> U8
+    @ Collect component in skeleton
+    passive component Collect {
+        #for $component in $sensorComps
+        output port ${component}_Collect_Outport: Sensor.${component}_Collect_Port
+        #end for
+
+        sync input port Collect_Inport: Collect_Port
+
+        @ Port for requesting the current time
+        time get port timeCaller
+
+        @ Port for sending textual representation of events
+        text event port logTextOut
+
+        @ Port for sending events to downlink
+        event port logOut
+
+        @ Port for sending telemetry channels to downlink
+        telemetry port tlmOut
+
+        event PROCESSALL()\
+            severity activity low\
+            format "Start component start"
+
+    }
+}

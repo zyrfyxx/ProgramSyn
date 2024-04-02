@@ -1,0 +1,30 @@
+\#include "Components/Execute/Execute.hpp"
+\#include "FpConfig.hpp"
+
+namespace Skeleton {
+
+  Execute ::
+    Execute(const char* const compName) :
+      ExecuteComponentBase(compName)
+  {
+
+  }
+
+  Execute ::
+    ~Execute()
+  {
+
+  }
+
+  U8 Execute ::
+    doallaction_handler(NATIVE_INT_TYPE portNum)
+  {
+    // TODO return
+    this->log_ACTIVITY_LO_DOALLACTION();
+    #for $component in $actionComps
+    this->${component}_Execute_Outport_out(0);
+    #end for
+    return 1;
+  }
+
+}

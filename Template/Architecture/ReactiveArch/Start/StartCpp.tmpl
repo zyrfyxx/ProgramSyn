@@ -1,0 +1,29 @@
+\#include "Components/Start/Start.hpp"
+\#include "FpConfig.hpp"
+
+namespace Skeleton {
+  Start ::
+    Start(const char* const compName) :
+      StartComponentBase(compName)
+  {
+  }
+
+  Start ::
+    ~Start()
+  {
+  }
+
+  U8 Start ::
+    startall_input_handler(NATIVE_INT_TYPE portNum)
+  {
+    // TODO return
+    this->log_ACTIVITY_LO_STARTALL();
+    #for $component in $sensorComps
+    this->${component}_Start_Outport_out(0);
+    #end for
+    #for $component in $actionComps
+    this->${component}_Start_Outport_out(0);
+    #end for
+    return 1;
+  }
+}
