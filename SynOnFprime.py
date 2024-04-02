@@ -554,9 +554,6 @@ class ReactiveArch:
         return self.connectionList
 
 
-def smallFirst(str):
-#写一个函数，将字符串的第一个变为小写
-    return str[0].lower() + str[1:]
 
 
 class BasicSoftware:
