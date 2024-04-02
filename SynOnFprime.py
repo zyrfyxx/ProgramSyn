@@ -159,70 +159,59 @@ class CompInstance:
 
 class Component:
     def __init__(self) -> None:
-        # 组件名称
         self.name = None
-        # 组件类型
+
         self.type = None
-        # 组件用途
+
         self.usage = None
-        # 组件属性映射
+ 
         self.map2prop = None
-        # C++源文件路径
+
         self.cppFile = None
-        # C++头文件路径
+
         self.hppFile = None
-        # FPP源文件路径
+  
         self.fppFile = None
-        # C++模板文件路径
         self.cppTemplateFile = None
-        # C++头文件模板路径
+
         self.hppTemplateFile = None
-        # FPP头文件模板路径
+
         self.fppTemplateFile = None
-        # FPP实例化文件路径
+
         self.fppInstance = None
-        # 组件目录路径
+
         self.compDirectory = None
-        # 依赖组件列表
+
         self.dependentComp = []
     def setName(self, name):
-        # 设置组件名称
         self.name = name
     def setType(self, type):
-        # 设置组件类型
         self.type = type
     def setUsage(self, usage):
-        # 设置组件用途
         self.usage = usage
     def setMap2Prop(self, map2prop):
-        # 设置组件属性映射
         self.map2prop = map2prop
     def setCompDirectory(self, directory):
-        # 设置组件目录路径
         self.compDirectory = directory
     def loadCppFile(self):
-        # 加载FPP源文件
         filePath = os.path.join(self.compDirectory, self.name + '.cpp')
         with open(filePath, 'r') as f:
             self.cppFile = f.read()
         return self.cppFile
 
     def loadHppFile(self):
-        # 加载C++头文件
         filePath = os.path.join(self.compDirectory, self.name + '.hpp')
         with open(filePath, 'r') as f:
             self.hppFile = f.read()
         return self.hppFile
         
     def loadFppFile(self):
-        # 加载FPP源文件
         filePath = os.path.join(self.compDirectory, self.name + '.cpp')
         with open(filePath, 'r') as f:
             self.cppFile = f.read()
         return self.cppFile
         
     def loadCppTemplateFile(self):
-        # 加载C++模板文件
         filePath = os.path.join(self.compDirectory, self.name + 'Cpp.tmpl')
         with open(filePath, 'r') as f:
             self.cppTemplateFile = f.read()
@@ -249,7 +238,6 @@ class SensorCompList:
         self.compLibDirectory = None
         self.compList = []
     def setCompLibDirectory(self, directory):
-        # print('Set Comp Lib Directory', directory)
         self.compLibDirectory = directory
     def load(self, sensorRecResult):
         for compInfo in sensorRecResult:
@@ -404,8 +392,16 @@ class ReactiveArch:
         file.actionComps = actionNameList
         self.executeComp.fppFile = file.__str__()
 
+    def loadConnectInArch(self):
+        pass
+    
+    def loadArchInstances(self):
+        pass
             
-    def loadConnect2Arch(self, sensorNameList, actionNameList):
+    def loadConnectArch2Sensors(self, sensorNameList):
+        pass
+    
+    def loadConnectArch2Actions(self, actionNameList):
         pass
 
     
