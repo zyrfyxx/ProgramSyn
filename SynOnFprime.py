@@ -179,6 +179,7 @@ class Component:
         self.ProcessInport = None
         self.diagnoseInport = None
         self.executeInport = None
+        self.calculateInport = None
         
         self.cppFile = None
         self.hppFile = None
@@ -187,6 +188,7 @@ class Component:
         self.hppTemplateFile = None
         self.fppTemplateFile = None
         self.fppInstance = None
+        self.cmakeFile = None
         
         self.compDirectory = None
         self.dependentComp = []
@@ -202,6 +204,8 @@ class Component:
         self.map2prop = map2prop
     def setCompDirectory(self, directory):
         self.compDirectory = directory
+    def setCMakeFile(self, cmakeFile):
+        self.cmakeFile = cmakeFile
     def loadInports(self):
         self.compInport = self.name + "_Inport"
         self.startInport = self.name + "_Start_Inport"
@@ -209,6 +213,7 @@ class Component:
         self.ProcessInport = self.name + "_Process_Inport"
         self.diagnoseInport = self.name + "_Diagnose_Inport"
         self.executeInport = self.name + "_Execute_Inport"
+        self.calculateInport = self.name + "_Calculate_Inport"
 
     def loadCppFile(self):
         filePath = os.path.join(self.compDirectory, self.name + '.cpp')
@@ -223,10 +228,10 @@ class Component:
         return self.hppFile
         
     def loadFppFile(self):
-        filePath = os.path.join(self.compDirectory, self.name + '.cpp')
+        filePath = os.path.join(self.compDirectory, self.name + '.fpp')
         with open(filePath, 'r') as f:
-            self.cppFile = f.read()
-        return self.cppFile
+            self.fppFile = f.read()
+        return self.fppFile
         
     def loadCppTemplateFile(self):
         filePath = os.path.join(self.compDirectory, self.name + 'Cpp.tmpl')
@@ -312,10 +317,12 @@ class ReactiveArch:
         taskComp.setName('Task')
         taskComp.loadInports()
         taskComp.setCompDirectory(self.taskPath)
+        print("  [taskPath]  :", taskComp.compDirectory)
         taskComp.loadCppFile()
         taskComp.loadHppFile()
         taskComp.loadFppFile()
         self.taskComp = taskComp
+        return self.taskComp
     def loadStart(self):
         self.startPath = os.path.join(self.archDirectory, 'Start')
         startComp = Component()
@@ -423,14 +430,14 @@ class ReactiveArch:
 
     def loadConnectInArch(self):
         connection = CompConnection()
-        self.task2StartConnection = connection.getSkeleton2Skeleton("task", "Start_Output", "start", "Start_Inport")
+        self.task2StartConnection = connection.getSkeleton2Skeleton("task", "Start_Outport", "start", "Start_Inport")
         self.task2CollectConnection = connection.getSkeleton2Skeleton("task", "Collect_Outport", "collect", "Collect_Inport")
         self.task2ProcessConnection = connection.getSkeleton2Skeleton("task", "Process_Outport","process", "Process_Inport")
         self.task2DiagnoseConnection = connection.getSkeleton2Skeleton("task", "Diagnose_Outport", "diagnose", "Diagnose_Inport")
         self.task2CoreConnection = connection.getSkeleton2Skeleton("task", "Core_Outport","core", "Core_Inport")
         self.task2ExecuteConnection = connection.getSkeleton2Skeleton("task", "Execute_Outport","execute", "Execute_Inport")
         self.core2CalculateConnection = connection.getSkeleton2Skeleton("core", "Calculate_Outport", "calculate", "Calculate_Inport")
-        self.core2ControlConnection = connection.getSkeleton2Skeleton("core", "Control_Output", "control", "COntrol_Inport")
+        self.core2ControlConnection = connection.getSkeleton2Skeleton("core", "Control_Outport", "control", "COntrol_Inport")
     
     def loadArchInstances(self):
         compInstance = CompInstance()
@@ -447,7 +454,7 @@ class ReactiveArch:
         start2Sensors = []
         for component in sensorCompList:
             connection = CompConnection()
-            start2Sensors.append(connection.getSkeleton2SensorConnection("start", component.name+"Start_Output", component.name, component.startInput))
+            start2Sensors.append(connection.getSkeleton2SensorConnection("start", component.name+"Start_Outport", component.name, component.startInport))
         self.start2SensorConnections = start2Sensors
         return self.start2SensorConnections
             
@@ -455,7 +462,7 @@ class ReactiveArch:
         start2Actions = []
         for component in actionCompList:
             connection = CompConnection()
-            start2Actions.append(connection.getSkeleton2ActionConnection("start", component.name + "Start_Output", component.name, component.startInput))
+            start2Actions.append(connection.getSkeleton2ActionConnection("start", component.name + "Start_Outport", component.name, component.startInport))
         self.start2ActionConnections = start2Actions
         return self.start2ActionConnections
     
@@ -463,7 +470,7 @@ class ReactiveArch:
         collect2Sensors = []
         for component in sensorCompList:
             connection = CompConnection()
-            collect2Sensors.append(connection.getSkeleton2SensorConnection("collect", component.name+"Collect_Outport", component.name, component.collectInput))
+            collect2Sensors.append(connection.getSkeleton2SensorConnection("collect", component.name+"Collect_Outport", component.name, component.collectInport))
         self.collect2SensorConnections = collect2Sensors
         return self.collect2SensorConnections
     
@@ -471,7 +478,7 @@ class ReactiveArch:
         process2Sensors = []
         for component in sensorCompList:
             connection = CompConnection()
-            process2Sensors.append(connection.getSkeleton2ActionConnection("process", component.name+"Process_Output", component.name, component.ProcessInput))
+            process2Sensors.append(connection.getSkeleton2ActionConnection("process", component.name+"Process_Outport", component.name, component.ProcessInport))
         self.process2SensorConnections = process2Sensors
         return self.process2SensorConnections
     
@@ -479,7 +486,7 @@ class ReactiveArch:
         diagnose2Sensors = []
         for component in sensorCompList:
             connection = CompConnection()
-            diagnose2Sensors.append(connection.getSkeleton2ActionConnection("diagnose", component.name+"Diagnose_Output", component.name, component.DiagnoseInput))
+            diagnose2Sensors.append(connection.getSkeleton2ActionConnection("diagnose", component.name+"Diagnose_Outport", component.name, component.diagnoseInport))
         self.diagnose2SensorConnections = diagnose2Sensors
         return self.diagnose2SensorConnections
         
@@ -487,7 +494,7 @@ class ReactiveArch:
         diagnose2Actions = []
         for component in actionCompList:
             connection = CompConnection()
-            diagnose2Actions.append(connection.getSkeleton2ActionConnection("diagnose", component.name+"Diagnose_Output", component.name, component.DiagnoseInput))
+            diagnose2Actions.append(connection.getSkeleton2ActionConnection("diagnose", component.name+"Diagnose_Outport", component.name, component.diagnoseInport))
         self.diagnose2ActionConnections = diagnose2Actions
         return self.diagnose2ActionConnections
     
@@ -495,7 +502,7 @@ class ReactiveArch:
         calculate2Sensors = []
         for component in sensorCompList:
             connection = CompConnection()
-            calculate2Sensors.append(connection.getSkeleton2ActionConnection("calculate", component.name+"Calculate_Output", component.name, component.CalculateInput))
+            calculate2Sensors.append(connection.getSkeleton2ActionConnection("calculate", component.name+"Calculate_Outport", component.name, component.calculateInport))
         self.calculate2SensorConnections = calculate2Sensors
         return self.calculate2SensorConnections
     
@@ -503,7 +510,7 @@ class ReactiveArch:
         calculate2Actions = []
         for component in actionCompList:
             connection = CompConnection()
-            calculate2Actions.append(connection.getSkeleton2ActionConnection("calculate", component.name+"Calculate_Output", component.name, component.CalculateInput))
+            calculate2Actions.append(connection.getSkeleton2ActionConnection("calculate", component.name+"Calculate_Outport", component.name, component.calculateInport))
         self.calculate2ActionConnections = calculate2Actions
         return self.calculate2ActionConnections
     
@@ -511,14 +518,15 @@ class ReactiveArch:
         execute2Actions = []
         for component in actionCompList:
             connection = CompConnection()
-            execute2Actions.append(connection.getSkeleton2ActionConnection("execute", component.name+"Execute_Output", component.name, component.ExecuteInput))
+            execute2Actions.append(connection.getSkeleton2ActionConnection("execute", component.name+"Execute_Outport", component.name, component.executeInport))
         self.execute2ActionConnections = execute2Actions
         return self.execute2ActionConnections
     
     def loadCompCMake(self):
         cmake4Fprime = CMake4Fprime()
-        self.taskCompCMake = cmake4Fprime.getComponentCMake("Task")
-        self.startCompCMake = cmake4Fprime.getComponentCMake("Start")
+        self.taskComp.setCMakeFile(cmake4Fprime.getComponentCMake("Task"))
+        self.startComp.setCMakeFile(cmake4Fprime.getComponentCMake("Start"))
+        
         self.collectCompCMake = cmake4Fprime.getComponentCMake("Collect")
         self.processCompCMake = cmake4Fprime.getComponentCMake("Process")
         self.diagnoseCompCMake = cmake4Fprime.getComponentCMake("Diagnose")
@@ -578,6 +586,25 @@ class ReactiveArch:
         for i in self.execute2ActionConnections:
             self.connectionList.append(i)
         return self.connectionList
+    
+    def createInProject(self, projectDir):
+        compList = []
+        compList.append(self.taskComp)
+        for component in compList:
+            CMakePath = os.path.join(projectDir, "CMakeLists.txt")
+            for cmakeDir in self.CMakeDir:
+                with open(CMakePath, 'a+') as f:
+                    f.write(cmakeDir + "\n")
+            if component.name not in os.listdir():
+                compDirPath = os.path.join(projectDir, component.name)
+                os.mkdir(compDirPath)
+                fppPath = os.path.join(compDirPath, component.name+".fpp")
+                cmakePath = os.path.join(compDirPath, "CMakeLists.txt")
+                with open(fppPath, 'w') as f:
+                    f.write(component.fppFile)
+                with open(cmakePath, 'w') as f:
+                    f.write(component.cmakeFile)
+        
 
 
 
@@ -642,8 +669,10 @@ class BasicSoftware:
             reactiveArch.loadCalculate()
             reactiveArch.loadControl()
             reactiveArch.loadExecute()
-            reactiveArch.loadConnections(self.sensorCompList, self.actionCompList)
+            reactiveArch.loadConnections(self.sensorCompList.compList, self.actionCompList.compList)
             reactiveArch.loadArchInstances()
+            reactiveArch.loadCompCMake()
+            reactiveArch.loadCMakeDir()
             self.archtecture = reactiveArch
         return self.archtecture
     
@@ -658,21 +687,25 @@ if __name__ == '__main__':
     actionCompList = basicSoftware.loadActionCompList(getActionRecResult(), compLibDirectory)
     sensorNameList = [component.name for component in sensorCompList.compList]
     actionNameList = [component.name for component in actionCompList.compList]
-    print(sensorNameList)
-    print(actionNameList)
-    arch = basicSoftware.loadArch('reactive')
-    # print(arch.startComp.fppTemplateFile)
-    arch.completeStartTmpl(sensorNameList, actionNameList)
-    # print(arch.startComp.fppFile)
-    
-    print(arch.calculateComp.fppTemplateFile)
     
     
-    cmake4Fprime = CMake4Fprime()
-    t1 = cmake4Fprime.getComponentCMake("Control")
-    t2 = cmake4Fprime.getCompDirCMake("Control")
-    print(t1)
-    print(t2)
+    basicSoftware.loadArch('reactive')
+    basicSoftware.archtecture.createInProject('../ReactiveProject/Components/')
+    # print(sensorNameList)
+    # print(actionNameList)
+    # arch = basicSoftware.loadArch('reactive')
+    # # print(arch.startComp.fppTemplateFile)
+    # arch.completeStartTmpl(sensorNameList, actionNameList)
+    # # print(arch.startComp.fppFile)
+    
+    # print(arch.calculateComp.fppTemplateFile)
+    
+    
+    # cmake4Fprime = CMake4Fprime()
+    # t1 = cmake4Fprime.getComponentCMake("Control")
+    # t2 = cmake4Fprime.getCompDirCMake("Control")
+    # print(t1)
+    # print(t2)
     
     # compConnection = CompConnection()
     # t1 = compConnection.getSkeleton2ActionConnection("abc", "ABC", "Abc","0x123")
