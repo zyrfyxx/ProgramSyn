@@ -309,6 +309,20 @@ class ReactiveArch:
         self.instanceList = ["task", "start", "collect", "process", "diagnose", "core", "calculate", "control", "execute"]
         self.connectionList = []
         self.instanceList = []
+        self.sensorCompList = None
+        self.actionCompList = None
+        self.sensorNameList = None
+        self.actionNameList = None
+    def setSensorCompList(self, sensorCompList):
+        self.sensorCompList = sensorCompList
+    def loadSensorNameList(self):
+        self.sensorNameList = [component.name for component in self.sensorCompList.compList]
+        print("  [in loadSensorNameList]  ")
+        print("  [sensorNameList]  :", self.sensorNameList)
+    def setActionCompList(self, actionCompList):
+        self.actionCompList = actionCompList
+    def loadActionNameList(self):
+        self.actionNameList = [component.name for component in self.actionCompList.compList]
     def setArchDirectory(self, directory):
         self.archDirectory = directory
     def loadTask(self):
@@ -333,6 +347,9 @@ class ReactiveArch:
         startComp.loadFppTemplateFile()
         startComp.loadCppTemplateFile()
         self.startComp = startComp
+        
+        print("  [actionNameList]  :", self.actionNameList)
+        self.completeStartTmpl(self.sensorNameList, self.actionNameList)
         return self.startComp
     def loadCollect(self):
         self.collectPath = os.path.join(self.archDirectory, 'Collect')
@@ -416,17 +433,33 @@ class ReactiveArch:
         file.sensorComps = sensorNameList
         file.actionComps = actionNameList
         self.startComp.fppFile = file.__str__()
+
+    def completeCollectTmpl(self, sensorNameList, actionNameList):
+        file = Template(self.collectComp.fppTemplateFile)
+        file.sensorComps = sensorNameList
+        file.actionComps = actionNameList
+        self.collectComp.fppFile = file.__str__()
+    
     
     def completeProcessTmpl(self, sensorNameList, actionNameList):
         file = Template(self.processComp.fppTemplateFile)
         file.sensorComps = sensorNameList
         file.actionComps = actionNameList
         self.processComp.fppFile = file.__str__()
-    def completeExecuteTmpl(self, sensorNameList, actionNameList):
-        file = Template(self.executeComp.fppTemplateFile)
+        
+    def completeDiagnoseTmpl(self, sensorNameList, actionNameList):
+        file = Template(self.diagnoseComp.fppTemplateFile)
         file.sensorComps = sensorNameList
         file.actionComps = actionNameList
+        self.diagnoseComp.fppFile = file.__str__()
+        
+        
+        
+    def completeExecuteTmpl(self, sensorNameList, actionNameList):
+        file = Template(self.executeComp.fppTemplateFile)
+        file.actionComps = actionNameList
         self.executeComp.fppFile = file.__str__()
+    
 
     def loadConnectInArch(self):
         connection = CompConnection()
@@ -526,14 +559,13 @@ class ReactiveArch:
         cmake4Fprime = CMake4Fprime()
         self.taskComp.setCMakeFile(cmake4Fprime.getComponentCMake("Task"))
         self.startComp.setCMakeFile(cmake4Fprime.getComponentCMake("Start"))
-        
-        self.collectCompCMake = cmake4Fprime.getComponentCMake("Collect")
-        self.processCompCMake = cmake4Fprime.getComponentCMake("Process")
-        self.diagnoseCompCMake = cmake4Fprime.getComponentCMake("Diagnose")
-        self.coreCompCMake = cmake4Fprime.getComponentCMake("Core")
-        self.calculateCompCMake = cmake4Fprime.getComponentCMake("Calculate")
-        self.controlCompCMake = cmake4Fprime.getComponentCMake("Control")
-        self.executeCompCMake = cmake4Fprime.getComponentCMake("Execute")
+        self.collectComp.setCMakeFile(cmake4Fprime.getComponentCMake("Collect"))
+        self.processComp.setCMakeFile(cmake4Fprime.getComponentCMake("Process"))
+        self.diagnoseComp.setCMakeFile(cmake4Fprime.getComponentCMake("Diagnose"))
+        self.coreComp.setCMakeFile(cmake4Fprime.getComponentCMake("Core"))
+        self.controlComp.setCMakeFile(cmake4Fprime.getComponentCMake("Control"))
+        self.calculateComp.setCMakeFile(cmake4Fprime.getComponentCMake("Calculate"))
+        self.executeComp.setCMakeFile(cmake4Fprime.getComponentCMake("Execute"))
     
     def loadCMakeDir(self):
         cmake4Fprime = CMake4Fprime()
@@ -590,12 +622,18 @@ class ReactiveArch:
     def createInProject(self, projectDir):
         compList = []
         compList.append(self.taskComp)
+        compList.append(self.startComp)
+        compList.append(self.collectComp)
+        compList.append(self.processComp)
+        compList.append(self.diagnoseComp)
+        compList.append(self.coreComp)
+        compList.append(self.calculateComp)
+        compList.append(self.controlComp)
+        compList.append(self.executeComp)
         for component in compList:
-            CMakePath = os.path.join(projectDir, "CMakeLists.txt")
-            for cmakeDir in self.CMakeDir:
-                with open(CMakePath, 'a+') as f:
-                    f.write(cmakeDir + "\n")
-            if component.name not in os.listdir():
+            print("  [component name]  :", component.name)
+            print("  [os.listdir()]  :", os.listdir(projectDir))
+            if component.name not in os.listdir(projectDir):
                 compDirPath = os.path.join(projectDir, component.name)
                 os.mkdir(compDirPath)
                 fppPath = os.path.join(compDirPath, component.name+".fpp")
@@ -604,6 +642,10 @@ class ReactiveArch:
                     f.write(component.fppFile)
                 with open(cmakePath, 'w') as f:
                     f.write(component.cmakeFile)
+        CMakePath = os.path.join(projectDir, "CMakeLists.txt")
+        for cmakeDir in self.CMakeDir:
+            with open(CMakePath, 'a+') as f:
+                f.write(cmakeDir + "\n")
         
 
 
@@ -659,6 +701,10 @@ class BasicSoftware:
     def loadArch(self, archName):
         if archName == 'reactive':
             reactiveArch = ReactiveArch()
+            reactiveArch.setSensorCompList(self.sensorCompList)
+            reactiveArch.setActionCompList(self.actionCompList)
+            reactiveArch.loadSensorNameList()
+            reactiveArch.loadActionNameList()
             reactiveArch.setArchDirectory(r'./Template/Architecture/ReactiveArch')
             reactiveArch.loadStart()
             reactiveArch.loadTask()
