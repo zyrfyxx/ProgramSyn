@@ -515,6 +515,32 @@ class ReactiveArch:
         self.execute2ActionConnections = execute2Actions
         return self.execute2ActionConnections
     
+    def loadCompCMake(self):
+        cmake4Fprime = CMake4Fprime()
+        self.taskCompCMake = cmake4Fprime.getComponentCMake("Task")
+        self.startCompCMake = cmake4Fprime.getComponentCMake("Start")
+        self.collectCompCMake = cmake4Fprime.getComponentCMake("Collect")
+        self.processCompCMake = cmake4Fprime.getComponentCMake("Process")
+        self.diagnoseCompCMake = cmake4Fprime.getComponentCMake("Diagnose")
+        self.coreCompCMake = cmake4Fprime.getComponentCMake("Core")
+        self.calculateCompCMake = cmake4Fprime.getComponentCMake("Calculate")
+        self.controlCompCMake = cmake4Fprime.getComponentCMake("Control")
+        self.executeCompCMake = cmake4Fprime.getComponentCMake("Execute")
+    
+    def loadCMakeDir(self):
+        cmake4Fprime = CMake4Fprime()
+        self.CMakeDir = []
+        self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Task"))
+        self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Start"))
+        self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Collect"))
+        self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Process"))
+        self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Diagnose"))
+        self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Core"))
+        self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Calculate"))
+        self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Control"))
+        self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Execute"))
+        return self.CMakeDir
+    
     def loadConnections(self, sensorCompList, actionCompList):
         self.loadConnectInArch()
         self.loadStart2Sensors(sensorCompList)
@@ -579,6 +605,7 @@ class BasicSoftware:
             compModule = "Sensor"
             compName = i.name
             self.sensorInstanceList.append(compInstance.getPassiveCompInstance(instanceName, compModule, compName, ""))
+        return self.sensorInstanceList
     def loadActionInstances(self):
         self.actionInstanceList = []
         compInstance = CompInstance()
@@ -587,6 +614,20 @@ class BasicSoftware:
             compModule = "Action"
             compName = i.name
             self.actionInstanceList.append(compInstance.getActiveCompInstance(instanceName, compModule, compName, ""))
+        return self.actionInstanceList
+    def loadSensorCMakeDir(self):
+        cmake4Fprime = CMake4Fprime()
+        self.sensorCMakeDir = []
+        for i in self.sensorCompList:
+            self.sensorCMakeDir.append(cmake4Fprime.getCompDirCMake(i.name))
+        return self.sensorCMakeDir
+    
+    def loadActionCMakeDir(self):
+        cmake4Fprime = CMake4Fprime()
+        self.actionCMakeDir = []
+        for i in self.actionCompList:
+            self.actionCMakeDir.append(cmake4Fprime.getCompDirCMake(i.name))
+        return self.actionCMakeDir
             
     def loadArch(self, archName):
         if archName == 'reactive':
