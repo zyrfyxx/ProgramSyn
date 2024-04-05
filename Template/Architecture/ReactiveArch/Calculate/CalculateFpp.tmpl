@@ -2,13 +2,6 @@ module Skeleton {
     port Calculate_Port() -> U8
     @ Calculate component in skeleton
     passive component Calculate {
-        #for component in $sensorComps
-        output port sensorcomp1_getdata_1_output: Sensor.SensorComp1_GetData_1
-        #for end
-
-        #for component in $actionComps
-        output port actioncomp1_setdata_1_output: Action.ActionComp1_SetData_1
-        #end for
 
 
         sync input port Calculate_Inport: Calculate_Port

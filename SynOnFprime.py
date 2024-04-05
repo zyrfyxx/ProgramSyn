@@ -30,13 +30,15 @@ def getSensorRecResult():
         "propName": "people_ibjured",
         "compName": "Find_Injured_Person",
         # "compPath": "",
-        "usage": "Directly Use"
+        "usage": "Directly Use",
+        "dataGetList": ["Find_People", "People_Position"]
     },
     {
         "propName": "enemy_find",
         "compName": "Find_Enemy",
         # "compPath": "",
-        "usage": "Modified Before Use"
+        "usage": "Modified Before Use",
+        "dataGetList": ["Target_Position"]
     }
     ]
     return sensorRecResult
@@ -47,13 +49,15 @@ def getActionRecResult():
         "propName": "attack",
         "compName": "Attack",
         "compPath": "",
-        "usage": "Modified Before Use"
+        "usage": "Modified Before Use",
+        "dataSetList": ["Target_Position", "Do_Attack"]
     },
     {
         "propName": "send_signal",
         "compName": "Send_Signal",
         "compPath": "",
-        "usage": "Directly Use"
+        "usage": "Directly Use",
+        "dataSetList": ["Do_Send_Signal"]
     }
     ]
     return actionRecResult
@@ -181,6 +185,11 @@ class Component:
         self.executeInport = None
         self.calculateInport = None
         
+        self.sensorDataNameList = []
+        self.actionDataNameList = []
+        self.sensorFppTmplPath = None
+        self.actionFppTmplPath = None
+        
         self.cppFile = None
         self.hppFile = None
         self.fppFile = None
@@ -192,6 +201,14 @@ class Component:
         
         self.compDirectory = None
         self.dependentComp = []
+    def setSensorDataNames(self, dataNames):
+        self.sensorDataNameList = dataNames
+    def setActionDataNames(self, dataNames):
+        self.actionDataNameList = dataNames
+    def setSensorFppTmplPath(self, path):
+        self.sensorFppTmplPath = path
+    def setActionFppTmplPath(self, path):
+        self.actionFppTmplPath = path
     def setName(self, name):
         self.name = name
     def setType(self, type):
@@ -251,6 +268,29 @@ class Component:
             self.fppTemplateFile = f.read()
         return self.fppTemplateFile
     
+    def createSensorComp(self, projectDir):
+        with open(self.sensorFppTmplPath, 'r') as f:
+            sensorFppTmpl = f.read()
+        sensorFpp = Template(sensorFppTmpl)
+        sensorFpp.sensorName = self.name
+        sensorFpp.DataList = self.sensorDataNameList
+        sensorDirectory = os.path.join(projectDir, self.name)
+        if not os.path.exists(sensorDirectory):
+            os.makedirs(sensorDirectory)
+            with open(os.path.join(sensorDirectory, self.name+'.fpp'), 'w') as f:
+                f.write(sensorFpp.__str__())
+    def createActionComp(self, projectDir):
+        with open(self.actionFppTmplPath, 'r') as f:
+            actionFppTmpl = f.read()
+        actionFpp = Template(actionFppTmpl)
+        actionFpp.actionName = self.name
+        actionFpp.DataList = self.actionDataNameList
+        actionDirectory = os.path.join(projectDir, self.name)
+        if not os.path.exists(actionDirectory):
+            os.makedirs(actionDirectory)
+            with open(os.path.join(actionDirectory, self.name+'.fpp'), 'w') as f:
+                f.write(actionFpp.__str__())
+    
     def dependentCompCalcu(self):
         pass
 
@@ -270,6 +310,7 @@ class SensorCompList:
             sensorComp.setUsage(compInfo['usage'])
             sensorComp.setMap2Prop(compInfo['propName'])
             sensorComp.setCompDirectory(os.path.join(self.compLibDirectory, compInfo['compName']))
+            sensorComp.setSensorDataNames(compInfo['dataGetList'])
             self.compList.append(sensorComp)
         return self.compList
 
@@ -287,6 +328,7 @@ class ActionCompList:
             actionComp.setUsage(compInfo['usage'])
             actionComp.setMap2Prop(compInfo['propName'])
             actionComp.setCompDirectory(os.path.join(self.compLibDirectory, compInfo['compName']))
+            actionComp.setActionDataNames(compInfo['dataSetList'])
             self.compList.append(actionComp)
         return self.compList
 
@@ -361,6 +403,7 @@ class ReactiveArch:
         collectComp.loadFppTemplateFile()
         collectComp.loadCppTemplateFile()
         self.collectComp = collectComp
+        self.completeCollectTmpl(self.sensorNameList, self.actionNameList)
         return self.collectComp
     def loadProcess(self):
         self.processPath = os.path.join(self.archDirectory, 'Process')
@@ -372,6 +415,7 @@ class ReactiveArch:
         processComp.loadFppTemplateFile()
         processComp.loadCppTemplateFile()
         self.processComp = processComp
+        self.completeProcessTmpl(self.sensorNameList, self.actionNameList)
         return self.processComp
     def loadDiagnose(self):
         self.diagnosePath = os.path.join(self.archDirectory, 'Diagnose')
@@ -383,6 +427,7 @@ class ReactiveArch:
         diagnoseComp.loadFppTemplateFile()
         diagnoseComp.loadCppTemplateFile()
         self.diagnoseComp = diagnoseComp
+        self.completeDiagnoseTmpl(self.sensorNameList, self.actionNameList)
         return self.diagnoseComp
     def loadCore(self):
         self.corePath = os.path.join(self.archDirectory, 'Core')
@@ -405,6 +450,7 @@ class ReactiveArch:
         calculateComp.loadFppTemplateFile()
         calculateComp.loadCppTemplateFile()
         self.calculateComp = calculateComp
+        self.completeCalculateTmpl(self.sensorNameList, self.actionNameList)
         return self.calculateComp
     def loadControl(self):
         self.controlPath = os.path.join(self.archDirectory, 'Control')
@@ -416,6 +462,7 @@ class ReactiveArch:
         controlComp.loadFppTemplateFile()
         controlComp.loadCppTemplateFile()
         self.controlComp = controlComp
+        self.controlComp.fppFile = self.controlComp.fppTemplateFile
         return self.controlComp
     def loadExecute(self):
         self.executePath = os.path.join(self.archDirectory, 'Execute')
@@ -427,6 +474,7 @@ class ReactiveArch:
         executeComp.loadFppTemplateFile()
         executeComp.loadCppTemplateFile()
         self.executeComp = executeComp
+        self.completeExecuteTmpl(self.sensorNameList, self.actionNameList)
         return self.executeComp
     def completeStartTmpl(self, sensorNameList, actionNameList):
         file = Template(self.startComp.fppTemplateFile)
@@ -453,6 +501,12 @@ class ReactiveArch:
         file.actionComps = actionNameList
         self.diagnoseComp.fppFile = file.__str__()
         
+    def completeCalculateTmpl(self, sensorNameList, actionNameList):
+        print(self.calculateComp.fppTemplateFile)
+        file = Template(self.calculateComp.fppTemplateFile)
+        file.sensorComps = sensorNameList
+        file.actionComps = actionNameList
+        self.calculateComp.fppFile = file.__str__()
         
         
     def completeExecuteTmpl(self, sensorNameList, actionNameList):
@@ -734,9 +788,24 @@ if __name__ == '__main__':
     sensorNameList = [component.name for component in sensorCompList.compList]
     actionNameList = [component.name for component in actionCompList.compList]
     
+    projectDir = '../ReactiveProject/Components/'
+    
     
     basicSoftware.loadArch('reactive')
-    basicSoftware.archtecture.createInProject('../ReactiveProject/Components/')
+    basicSoftware.archtecture.createInProject(projectDir)
+    
+    sensorComp = Component()
+    sensorComp.setName("Find_Injured_Person")
+    sensorComp.setSensorDataNames(["Find_People", "People_Position"])
+    sensorComp.setSensorFppTmplPath(r'./Template/SensorTemplate/SensorFpp.tmpl')
+    sensorComp.createSensorComp(projectDir)
+    
+    actionComp = Component()
+    actionComp.setName("Attack")
+    actionComp.setActionDataNames(["Do_Attack", "Target_Position"])
+    actionComp.setActionFppTmplPath(r'./Template/ActionTemplate/ActionFpp.tmpl')
+    actionComp.createActionComp(projectDir)
+    
     # print(sensorNameList)
     # print(actionNameList)
     # arch = basicSoftware.loadArch('reactive')

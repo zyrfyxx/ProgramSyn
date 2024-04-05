@@ -1,0 +1,37 @@
+module Sensor {
+    port ${sensorName}_Start_Port() -> U8
+    port ${sensorName}_Collect_Port() -> U8
+    port ${sensorName}_Process_Port() -> U8
+    port ${sensorName}_Diagnose_Port() -> U8
+    #for $DataName in $DataList
+    port ${sensorName}_DataGet_${DataName}_Port() -> U8
+    #end for
+    @ ${sensorName} component 
+    passive component ${sensorName} {
+
+        sync input port ${sensorName}_Start_Inport: ${sensorName}_Start_Port
+        sync input port ${sensorName}_Collect_Inport: ${sensorName}_Collect_Port
+        sync input port ${sensorName}_Process_Inport: ${sensorName}_Process_Port
+        sync input port ${sensorName}_Diagnose_Inport: ${sensorName}_Diagnose_Port
+        #for $DataName in $DataList
+        sync input port ${sensorName}_DataGet_${DataName}_Inport: ${sensorName}_DateGet_${DataName}_Port
+        #end for
+        
+        @ Port for requesting the current time
+        time get port timeCaller
+
+        @ Port for sending textual representation of events
+        text event port logTextOut
+
+        @ Port for sending events to downlink
+        event port logOut
+
+        @ Port for sending telemetry channels to downlink
+        telemetry port tlmOut
+
+        event ${sensorName}()\
+            severity activity low\
+            format "${sensorName} component start"
+
+    }
+}

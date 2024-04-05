@@ -1,0 +1,35 @@
+module Action {
+    port ${actionName}_Start_Port() -> U8
+    port ${actionName}_Diagnose_Port() -> U8
+    port ${actionName}_Execute_Port() -> U8
+    #for $DataName in $DataList
+    port ${actionName}_DataSet_${DataName}_Port() -> U8
+    #end for
+    @ ${actionName} component 
+    passive component ${actionName} {
+
+        sync input port ${actionName}_Start_Inport: ${actionName}_Start_Port
+        sync input port ${actionName}_Diagnose_Inport: ${actionName}_Diagnose_Port
+        sync input port ${actionName}_Execute_Inport: ${actionName}_Execute_Port
+        #for $DataName in $DataList
+        sync input port ${actionName}_DataSet_${DataName}_Inport: ${actionName}_DateSet_${DataName}_Port
+        #end for
+        
+        @ Port for requesting the current time
+        time get port timeCaller
+
+        @ Port for sending textual representation of events
+        text event port logTextOut
+
+        @ Port for sending events to downlink
+        event port logOut
+
+        @ Port for sending telemetry channels to downlink
+        telemetry port tlmOut
+
+        event ${actionName}()\
+            severity activity low\
+            format "${actionName} component start"
+
+    }
+}
