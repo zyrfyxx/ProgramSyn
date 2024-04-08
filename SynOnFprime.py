@@ -32,14 +32,14 @@ def getSensorRecResult():
         # "compPath": "",
         "usage": "Directly Use",
         "dataGetList": ["Find_People", "People_Position"]
-    },
-    {
-        "propName": "enemy_find",
-        "compName": "Find_Enemy",
-        # "compPath": "",
-        "usage": "Modified Before Use",
-        "dataGetList": ["Target_Position"]
     }
+    # {
+    #     "propName": "enemy_find",
+    #     "compName": "Find_Enemy",
+    #     # "compPath": "",
+    #     "usage": "Modified Before Use",
+    #     "dataGetList": ["Target_Position"]
+    # }
     ]
     return sensorRecResult
 
@@ -51,14 +51,14 @@ def getActionRecResult():
         "compPath": "",
         "usage": "Modified Before Use",
         "dataSetList": ["Target_Position", "Do_Attack"]
-    },
-    {
-        "propName": "send_signal",
-        "compName": "Send_Signal",
-        "compPath": "",
-        "usage": "Directly Use",
-        "dataSetList": ["Do_Send_Signal"]
     }
+    # {
+    #     "propName": "send_signal",
+    #     "compName": "Send_Signal",
+    #     "compPath": "",
+    #     "usage": "Directly Use",
+    #     "dataSetList": ["Do_Send_Signal"]
+    # }
     ]
     return actionRecResult
 
@@ -89,7 +89,144 @@ class CompConnection:
         self.skeleton2ActionTmpl = "${skeletonInstanceName}.${outportName} -> ${actionInstanceName}.${inportName}"
         self.rateGroup2SensorTmpl = "rateGroup${rateGroupNum}Comp.RateGroupMemberOut[${rateGroupMemberOutNum}] -> ${sensorInstanceName}.${inportName}"
         self.rateGroup2ActionTmpl = "rateGroup${rateGroupNum}Comp.RateGroupMemberOut[${rateGroupMemberOutNum}] -> ${actionInstanceName}.${inportName}"
-        self.skeleton2skeletonTmpl = "${skeletonInstanceName1}.${outportName} -> ${skeletonInstanceName1}.${inportName}"
+        self.skeleton2skeletonTmpl = "${skeletonInstanceName1}.${outportName} -> ${skeletonInstanceName2}.${inportName}"
+        
+        self.connectionTmpl = """
+module ReactiveDeployment {
+
+    enum Ports_RateGroups {
+      rateGroup1
+      rateGroup2
+      rateGroup3
+    }
+
+  topology ReactiveDeployment {
+
+    instance \$health
+    instance blockDrv
+    instance tlmSend
+    instance cmdDisp
+    instance cmdSeq
+    instance comDriver
+    instance comQueue
+    instance comStub
+    instance deframer
+    instance eventLogger
+    instance fatalAdapter
+    instance fatalHandler
+    instance fileDownlink
+    instance fileManager
+    instance fileUplink
+    instance bufferManager
+    instance framer
+    instance posixTime
+    instance prmDb
+    instance rateGroup1
+    instance rateGroup2
+    instance rateGroup3
+    instance rateGroupDriver
+    instance textLogger
+    instance systemResources
+    #for $i in $instanceNameList:
+    instance ${i}
+    #end for
+
+
+    command connections instance cmdDisp
+
+    event connections instance eventLogger
+
+    param connections instance prmDb
+
+    telemetry connections instance tlmSend
+
+    text event connections instance textLogger
+
+    time connections instance posixTime
+
+    health connections instance \$health
+
+
+    connections Downlink {
+
+      eventLogger.PktSend -> comQueue.comQueueIn[0]
+      tlmSend.PktSend -> comQueue.comQueueIn[1]
+      fileDownlink.bufferSendOut -> comQueue.buffQueueIn[0]
+
+      comQueue.comQueueSend -> framer.comIn
+      comQueue.buffQueueSend -> framer.bufferIn
+
+      framer.framedAllocate -> bufferManager.bufferGetCallee
+      framer.framedOut -> comStub.comDataIn
+      framer.bufferDeallocate -> fileDownlink.bufferReturn
+
+      comDriver.deallocate -> bufferManager.bufferSendIn
+      comDriver.ready -> comStub.drvConnected
+
+      comStub.comStatus -> framer.comStatusIn
+      framer.comStatusOut -> comQueue.comStatusIn
+      comStub.drvDataOut -> comDriver.\$send
+
+    }
+
+    connections FaultProtection {
+      eventLogger.FatalAnnounce -> fatalHandler.FatalReceive
+    }
+
+    connections RateGroups {
+      # Block driver
+      blockDrv.CycleOut -> rateGroupDriver.CycleIn
+
+      # Rate group 1
+      rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup1] -> rateGroup1.CycleIn
+      rateGroup1.RateGroupMemberOut[0] -> tlmSend.Run
+      rateGroup1.RateGroupMemberOut[1] -> fileDownlink.Run
+      rateGroup1.RateGroupMemberOut[2] -> systemResources.run
+
+      # Rate group 2
+      rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup2] -> rateGroup2.CycleIn
+      rateGroup2.RateGroupMemberOut[0] -> cmdSeq.schedIn
+
+      # Rate group 3
+      rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup3] -> rateGroup3.CycleIn
+      rateGroup3.RateGroupMemberOut[0] -> \$health.Run
+      rateGroup3.RateGroupMemberOut[1] -> blockDrv.Sched
+      rateGroup3.RateGroupMemberOut[2] -> bufferManager.schedIn
+    }
+
+    connections Sequencer {
+      cmdSeq.comCmdOut -> cmdDisp.seqCmdBuff
+      cmdDisp.seqCmdStatus -> cmdSeq.cmdResponseIn
+    }
+
+    connections Uplink {
+
+      comDriver.allocate -> bufferManager.bufferGetCallee
+      comDriver.\$recv -> comStub.drvDataIn
+      comStub.comDataOut -> deframer.framedIn
+
+      deframer.framedDeallocate -> bufferManager.bufferSendIn
+      deframer.comOut -> cmdDisp.seqCmdBuff
+
+      cmdDisp.seqCmdStatus -> deframer.cmdResponseIn
+
+      deframer.bufferAllocate -> bufferManager.bufferGetCallee
+      deframer.bufferOut -> fileUplink.bufferSendIn
+      deframer.bufferDeallocate -> bufferManager.bufferSendIn
+      fileUplink.bufferSendOut -> bufferManager.bufferSendIn
+    }
+
+    connections ReactiveDeployment {
+        #for $i in $connectionList
+        ${i}
+        #end for
+    }
+
+  }
+
+}
+
+"""
         
     def getSkeleton2Skeleton(self, skeletonInstanceName1, outportName, skeletonInstanceName2, inportName):
         connection = Template(self.skeleton2skeletonTmpl)
@@ -131,7 +268,11 @@ class CompConnection:
         connection.inportName = inportName
         return connection.__str__()
 
-
+    def getConnectionFile(self, instanceNameList, connectList):
+        connectionFile = Template(self.connectionTmpl)
+        connectionFile.instanceNameList = instanceNameList
+        connectionFile.connectionList = connectList
+        return connectionFile.__str__()
 
 
 class CompInstance:
@@ -145,7 +286,115 @@ class CompInstance:
         self.queuedCompInstanceTmpl += "  queue size Default.QUEUE_SIZE \n"
         
         self.passiveCompInstanceTmpl = "instance ${instanceName}: ${compModule}.${compName} base id ${baseID} \n"
-    def getActiveCompInstance(self, instanceName, compModule, compName, baseID, peiority):
+        
+        self.instancesTmpl = """
+module ReactiveDeployment {
+
+  module Default {
+    constant QUEUE_SIZE = 10
+    constant STACK_SIZE = 64 * 1024
+  }
+
+  instance blockDrv: Drv.BlockDriver base id 0x0100 \\
+    queue size Default.QUEUE_SIZE \\
+    stack size Default.STACK_SIZE \\
+    priority 140
+
+  instance rateGroup1: Svc.ActiveRateGroup base id 0x0200 \\
+    queue size Default.QUEUE_SIZE \\
+    stack size Default.STACK_SIZE \\
+    priority 120
+
+  instance rateGroup2: Svc.ActiveRateGroup base id 0x0300 \\
+    queue size Default.QUEUE_SIZE \\
+    stack size Default.STACK_SIZE \\
+    priority 119
+
+  instance rateGroup3: Svc.ActiveRateGroup base id 0x0400 \\
+    queue size Default.QUEUE_SIZE \\
+    stack size Default.STACK_SIZE \\
+    priority 118
+
+  instance cmdDisp: Svc.CommandDispatcher base id 0x0500 \\
+    queue size 20 \\
+    stack size Default.STACK_SIZE \\
+    priority 101
+
+  instance cmdSeq: Svc.CmdSequencer base id 0x0600 \\
+    queue size Default.QUEUE_SIZE \\
+    stack size Default.STACK_SIZE \\
+    priority 100
+
+  instance comQueue: Svc.ComQueue base id 0x0700 \\
+      queue size Default.QUEUE_SIZE \\
+      stack size Default.STACK_SIZE \\
+      priority 100 \\
+
+  instance fileDownlink: Svc.FileDownlink base id 0x0800 \\
+    queue size 30 \\
+    stack size Default.STACK_SIZE \\
+    priority 100
+
+  instance fileManager: Svc.FileManager base id 0x0900 \\
+    queue size 30 \\
+    stack size Default.STACK_SIZE \\
+    priority 100
+
+  instance fileUplink: Svc.FileUplink base id 0x0A00 \\
+    queue size 30 \\
+    stack size Default.STACK_SIZE \\
+    priority 100
+
+  instance eventLogger: Svc.ActiveLogger base id 0x0B00 \\
+    queue size Default.QUEUE_SIZE \\
+    stack size Default.STACK_SIZE \\
+    priority 98
+
+  instance tlmSend: Svc.TlmChan base id 0x0C00 \\
+    queue size Default.QUEUE_SIZE \\
+    stack size Default.STACK_SIZE \\
+    priority 97
+
+  instance prmDb: Svc.PrmDb base id 0x0D00 \\
+    queue size Default.QUEUE_SIZE \\
+    stack size Default.STACK_SIZE \\
+    priority 96
+
+  instance \$health: Svc.Health base id 0x2000 \\
+    queue size 25
+
+  @ Communications driver. May be swapped with other com drivers like UART or TCP
+  instance comDriver: Drv.TcpClient base id 0x4000
+
+  instance framer: Svc.Framer base id 0x4100
+
+  instance fatalAdapter: Svc.AssertFatalAdapter base id 0x4200
+
+  instance fatalHandler: Svc.FatalHandler base id 0x4300
+
+  instance bufferManager: Svc.BufferManager base id 0x4400
+
+  instance posixTime: Svc.PosixTime base id 0x4500
+
+  instance rateGroupDriver: Svc.RateGroupDriver base id 0x4600
+
+  instance textLogger: Svc.PassiveTextLogger base id 0x4800
+
+  instance deframer: Svc.Deframer base id 0x4900
+
+  instance systemResources: Svc.SystemResources base id 0x4A00
+
+  instance comStub: Svc.ComStub base id 19200
+
+  #for $instance in $instanceList
+  ${instance}
+  #end for
+
+
+}
+
+"""
+    def getActiveCompInstance(self, instanceName, compModule, compName, baseID, peiority=100):
         instance = Template(self.activeCompInstanceTmpl)
         instance.instanceName = instanceName
         instance.compModule = compModule
@@ -169,6 +418,10 @@ class CompInstance:
         instance.compName = compName
         instance.baseID = baseID
         return instance.__str__()
+    def getInstances(self, instanceList):
+        instances = Template(self.instancesTmpl)
+        instances.instanceList = instanceList
+        return instances.__str__()
 
 class Component:
     def __init__(self) -> None:
@@ -182,7 +435,7 @@ class Component:
         self.collectInport = None
         self.ProcessInport = None
         self.diagnoseInport = None
-        self.executeInport = None
+        self.executionInport = None
         self.calculateInport = None
         
         self.sensorDataNameList = []
@@ -229,8 +482,14 @@ class Component:
         self.collectInport = self.name + "_Collect_Inport"
         self.ProcessInport = self.name + "_Process_Inport"
         self.diagnoseInport = self.name + "_Diagnose_Inport"
-        self.executeInport = self.name + "_Execute_Inport"
+        self.executionInport = self.name + "_Execution_Inport"
         self.calculateInport = self.name + "_Calculate_Inport"
+        self.dataGetPort = []
+        for i in self.sensorDataNameList:
+            self.dataGetPort.append(self.name + "_DataGet_" + i )
+        self.dataSetPort = []
+        for i in self.actionDataNameList:
+            self.dataSetPort.append(self.name + "_DataSet_" + i )
 
     def loadCppFile(self):
         filePath = os.path.join(self.compDirectory, self.name + '.cpp')
@@ -304,13 +563,13 @@ class SensorCompList:
     def load(self, sensorRecResult):
         for compInfo in sensorRecResult:
             sensorComp = Component()
+            sensorComp.setSensorDataNames(compInfo['dataGetList'])
             sensorComp.setName(compInfo['compName'])
             sensorComp.loadInports()
             sensorComp.setKind('sensor')
             sensorComp.setUsage(compInfo['usage'])
             sensorComp.setMap2Prop(compInfo['propName'])
             sensorComp.setCompDirectory(os.path.join(self.compLibDirectory, compInfo['compName']))
-            sensorComp.setSensorDataNames(compInfo['dataGetList'])
             self.compList.append(sensorComp)
         return self.compList
 
@@ -323,12 +582,13 @@ class ActionCompList:
     def load(self, actionRecResult):
         for compInfo in actionRecResult:
             actionComp = Component()
+            actionComp.setActionDataNames(compInfo['dataSetList'])
             actionComp.setName(compInfo['compName'])
+            actionComp.loadInports()
             actionComp.setKind('action')
             actionComp.setUsage(compInfo['usage'])
             actionComp.setMap2Prop(compInfo['propName'])
             actionComp.setCompDirectory(os.path.join(self.compLibDirectory, compInfo['compName']))
-            actionComp.setActionDataNames(compInfo['dataSetList'])
             self.compList.append(actionComp)
         return self.compList
 
@@ -347,8 +607,8 @@ class ReactiveArch:
         self.coreComp = None
         self.calculateComp = None
         self.controlComp = None
-        self.executeComp = None
-        self.instanceList = ["task", "start", "collect", "process", "diagnose", "core", "calculate", "control", "execute"]
+        self.executionComp = None
+        self.instanceNameList = ["task", "start", "collect", "process", "diagnose", "core", "calculate", "control", "execution"]
         self.connectionList = []
         self.instanceList = []
         self.sensorCompList = None
@@ -440,7 +700,15 @@ class ReactiveArch:
         coreComp.loadCppFile()
         self.coreComp = coreComp
         return self.coreComp
-    def loadCalculate(self):
+    def loadCalculate(self, sensorCompList, actionCompList):
+        dataGetPortList = []
+        dataSetPortList = []
+        for component in sensorCompList.compList:
+            for port in component.dataGetPort:
+                dataGetPortList.append(port)
+        for component in actionCompList.compList:
+            for port in component.dataSetPort:
+                dataSetPortList.append(port)
         self.calculatePath = os.path.join(self.archDirectory, 'Calculate')
         calculateComp = Component()
         calculateComp.setName('Calculate')
@@ -450,7 +718,7 @@ class ReactiveArch:
         calculateComp.loadFppTemplateFile()
         calculateComp.loadCppTemplateFile()
         self.calculateComp = calculateComp
-        self.completeCalculateTmpl(self.sensorNameList, self.actionNameList)
+        self.completeCalculateTmpl(dataGetPortList, dataSetPortList)
         return self.calculateComp
     def loadControl(self):
         self.controlPath = os.path.join(self.archDirectory, 'Control')
@@ -464,18 +732,18 @@ class ReactiveArch:
         self.controlComp = controlComp
         self.controlComp.fppFile = self.controlComp.fppTemplateFile
         return self.controlComp
-    def loadExecute(self):
-        self.executePath = os.path.join(self.archDirectory, 'Execute')
-        executeComp = Component()
-        executeComp.setName('Execute')
-        executeComp.loadInports()
-        executeComp.setCompDirectory(self.executePath)
-        executeComp.loadHppFile()
-        executeComp.loadFppTemplateFile()
-        executeComp.loadCppTemplateFile()
-        self.executeComp = executeComp
-        self.completeExecuteTmpl(self.sensorNameList, self.actionNameList)
-        return self.executeComp
+    def loadExecution(self):
+        self.executionPath = os.path.join(self.archDirectory, 'Execution')
+        executionComp = Component()
+        executionComp.setName('Execution')
+        executionComp.loadInports()
+        executionComp.setCompDirectory(self.executionPath)
+        executionComp.loadHppFile()
+        executionComp.loadFppTemplateFile()
+        executionComp.loadCppTemplateFile()
+        self.executionComp = executionComp
+        self.completeExecutionTmpl(self.sensorNameList, self.actionNameList)
+        return self.executionComp
     def completeStartTmpl(self, sensorNameList, actionNameList):
         file = Template(self.startComp.fppTemplateFile)
         file.sensorComps = sensorNameList
@@ -501,18 +769,18 @@ class ReactiveArch:
         file.actionComps = actionNameList
         self.diagnoseComp.fppFile = file.__str__()
         
-    def completeCalculateTmpl(self, sensorNameList, actionNameList):
+    def completeCalculateTmpl(self, dataGetPortList, dataSetPortList):
         print(self.calculateComp.fppTemplateFile)
         file = Template(self.calculateComp.fppTemplateFile)
-        file.sensorComps = sensorNameList
-        file.actionComps = actionNameList
+        file.sensorDataGetPort = dataGetPortList
+        file.actionDataSetPort = dataSetPortList
         self.calculateComp.fppFile = file.__str__()
         
         
-    def completeExecuteTmpl(self, sensorNameList, actionNameList):
-        file = Template(self.executeComp.fppTemplateFile)
+    def completeExecutionTmpl(self, sensorNameList, actionNameList):
+        file = Template(self.executionComp.fppTemplateFile)
         file.actionComps = actionNameList
-        self.executeComp.fppFile = file.__str__()
+        self.executionComp.fppFile = file.__str__()
     
 
     def loadConnectInArch(self):
@@ -522,26 +790,38 @@ class ReactiveArch:
         self.task2ProcessConnection = connection.getSkeleton2Skeleton("task", "Process_Outport","process", "Process_Inport")
         self.task2DiagnoseConnection = connection.getSkeleton2Skeleton("task", "Diagnose_Outport", "diagnose", "Diagnose_Inport")
         self.task2CoreConnection = connection.getSkeleton2Skeleton("task", "Core_Outport","core", "Core_Inport")
-        self.task2ExecuteConnection = connection.getSkeleton2Skeleton("task", "Execute_Outport","execute", "Execute_Inport")
+        self.task2ExecutionConnection = connection.getSkeleton2Skeleton("task", "Execution_Outport","execution", "Execution_Inport")
         self.core2CalculateConnection = connection.getSkeleton2Skeleton("core", "Calculate_Outport", "calculate", "Calculate_Inport")
-        self.core2ControlConnection = connection.getSkeleton2Skeleton("core", "Control_Outport", "control", "COntrol_Inport")
+        self.core2ControlConnection = connection.getSkeleton2Skeleton("core", "Control_Outport", "control", "Control_Inport")
     
-    def loadArchInstances(self):
+    def loadArchInstances(self, baseID):
         compInstance = CompInstance()
-        self.taskInstance = compInstance.getActiveCompInstance("task", "Skeleton", "Task", "", "")
-        self.startInstance = compInstance.getPassiveCompInstance("start", "Skeleton", "Start", "")
-        self.collectInstance = compInstance.getPassiveCompInstance("collect", "Skeleton", "Collect", "")
-        self.processInstance = compInstance.getPassiveCompInstance("process", "Skeleton", "Process", "")
-        self.coreInstance = compInstance.getPassiveCompInstance("core", "Skeleton", "Core", "")
-        self.calculateInstance = compInstance.getPassiveCompInstance("calculate", "Skeleton", "Calculate", "")
-        self.controlInstance = compInstance.getPassiveCompInstance("control", "Skeleton", "Control", "")
-        self.executeInstance = compInstance.getPassiveCompInstance("execute", "Skeleton", "Execute", "")
+        self.archInstanceList = []
+        self.taskInstance = compInstance.getActiveCompInstance("task", "Skeleton", "Task", str(baseID.getBaseID()))
+        self.startInstance = compInstance.getPassiveCompInstance("start", "Skeleton", "Start", str(baseID.getBaseID()))
+        self.collectInstance = compInstance.getPassiveCompInstance("collect", "Skeleton", "Collect", str(baseID.getBaseID()))
+        self.processInstance = compInstance.getPassiveCompInstance("process", "Skeleton", "Process", str(baseID.getBaseID()))
+        self.diagnoseInstance = compInstance.getPassiveCompInstance("diagnose", "Skeleton", "Diagnose", str(baseID.getBaseID()))
+        self.coreInstance = compInstance.getPassiveCompInstance("core", "Skeleton", "Core", str(baseID.getBaseID()))
+        self.calculateInstance = compInstance.getPassiveCompInstance("calculate", "Skeleton", "Calculate", str(baseID.getBaseID()))
+        self.controlInstance = compInstance.getPassiveCompInstance("control", "Skeleton", "Control", str(baseID.getBaseID()))
+        self.executionInstance = compInstance.getPassiveCompInstance("execution", "Skeleton", "Execution", str(baseID.getBaseID()))
+        self.archInstanceList.append(self.taskInstance)
+        self.archInstanceList.append(self.startInstance)
+        self.archInstanceList.append(self.collectInstance)
+        self.archInstanceList.append(self.processInstance)
+        self.archInstanceList.append(self.diagnoseInstance)
+        self.archInstanceList.append(self.coreInstance)
+        self.archInstanceList.append(self.calculateInstance)
+        self.archInstanceList.append(self.controlInstance)
+        self.archInstanceList.append(self.executionInstance)
+        return self.archInstanceList
             
     def loadStart2Sensors(self, sensorCompList):
         start2Sensors = []
         for component in sensorCompList:
             connection = CompConnection()
-            start2Sensors.append(connection.getSkeleton2SensorConnection("start", component.name+"Start_Outport", component.name, component.startInport))
+            start2Sensors.append(connection.getSkeleton2SensorConnection("start", component.name+"_Start_Outport", component.name.lower(), component.startInport))
         self.start2SensorConnections = start2Sensors
         return self.start2SensorConnections
             
@@ -549,7 +829,7 @@ class ReactiveArch:
         start2Actions = []
         for component in actionCompList:
             connection = CompConnection()
-            start2Actions.append(connection.getSkeleton2ActionConnection("start", component.name + "Start_Outport", component.name, component.startInport))
+            start2Actions.append(connection.getSkeleton2ActionConnection("start", component.name + "_Start_Outport", component.name.lower(), component.startInport))
         self.start2ActionConnections = start2Actions
         return self.start2ActionConnections
     
@@ -557,7 +837,7 @@ class ReactiveArch:
         collect2Sensors = []
         for component in sensorCompList:
             connection = CompConnection()
-            collect2Sensors.append(connection.getSkeleton2SensorConnection("collect", component.name+"Collect_Outport", component.name, component.collectInport))
+            collect2Sensors.append(connection.getSkeleton2SensorConnection("collect", component.name+"_Collect_Outport", component.name.lower(), component.collectInport))
         self.collect2SensorConnections = collect2Sensors
         return self.collect2SensorConnections
     
@@ -565,7 +845,7 @@ class ReactiveArch:
         process2Sensors = []
         for component in sensorCompList:
             connection = CompConnection()
-            process2Sensors.append(connection.getSkeleton2ActionConnection("process", component.name+"Process_Outport", component.name, component.ProcessInport))
+            process2Sensors.append(connection.getSkeleton2ActionConnection("process", component.name+"_Process_Outport", component.name.lower(), component.ProcessInport))
         self.process2SensorConnections = process2Sensors
         return self.process2SensorConnections
     
@@ -573,7 +853,7 @@ class ReactiveArch:
         diagnose2Sensors = []
         for component in sensorCompList:
             connection = CompConnection()
-            diagnose2Sensors.append(connection.getSkeleton2ActionConnection("diagnose", component.name+"Diagnose_Outport", component.name, component.diagnoseInport))
+            diagnose2Sensors.append(connection.getSkeleton2ActionConnection("diagnose", component.name+"_Diagnose_Outport", component.name.lower(), component.diagnoseInport))
         self.diagnose2SensorConnections = diagnose2Sensors
         return self.diagnose2SensorConnections
         
@@ -581,7 +861,7 @@ class ReactiveArch:
         diagnose2Actions = []
         for component in actionCompList:
             connection = CompConnection()
-            diagnose2Actions.append(connection.getSkeleton2ActionConnection("diagnose", component.name+"Diagnose_Outport", component.name, component.diagnoseInport))
+            diagnose2Actions.append(connection.getSkeleton2ActionConnection("diagnose", component.name+"_Diagnose_Outport", component.name.lower(), component.diagnoseInport))
         self.diagnose2ActionConnections = diagnose2Actions
         return self.diagnose2ActionConnections
     
@@ -589,7 +869,8 @@ class ReactiveArch:
         calculate2Sensors = []
         for component in sensorCompList:
             connection = CompConnection()
-            calculate2Sensors.append(connection.getSkeleton2ActionConnection("calculate", component.name+"Calculate_Outport", component.name, component.calculateInport))
+            for port in component.dataGetPort:
+                calculate2Sensors.append(connection.getSkeleton2ActionConnection("calculate", port+"_Outport", component.name.lower(), port+"_Inport"))
         self.calculate2SensorConnections = calculate2Sensors
         return self.calculate2SensorConnections
     
@@ -597,17 +878,18 @@ class ReactiveArch:
         calculate2Actions = []
         for component in actionCompList:
             connection = CompConnection()
-            calculate2Actions.append(connection.getSkeleton2ActionConnection("calculate", component.name+"Calculate_Outport", component.name, component.calculateInport))
+            for port in component.dataSetPort:
+                calculate2Actions.append(connection.getSkeleton2ActionConnection("calculate", port+"_Outport", component.name.lower(), port+"_Inport"))
         self.calculate2ActionConnections = calculate2Actions
         return self.calculate2ActionConnections
     
-    def loadExecute2Actions(self, actionCompList):
-        execute2Actions = []
+    def loadExecution2Actions(self, actionCompList):
+        execution2Actions = []
         for component in actionCompList:
             connection = CompConnection()
-            execute2Actions.append(connection.getSkeleton2ActionConnection("execute", component.name+"Execute_Outport", component.name, component.executeInport))
-        self.execute2ActionConnections = execute2Actions
-        return self.execute2ActionConnections
+            execution2Actions.append(connection.getSkeleton2ActionConnection("execution", component.name+"_Execution_Outport", component.name.lower(), component.executionInport))
+        self.execution2ActionConnections = execution2Actions
+        return self.execution2ActionConnections
     
     def loadCompCMake(self):
         cmake4Fprime = CMake4Fprime()
@@ -619,7 +901,7 @@ class ReactiveArch:
         self.coreComp.setCMakeFile(cmake4Fprime.getComponentCMake("Core"))
         self.controlComp.setCMakeFile(cmake4Fprime.getComponentCMake("Control"))
         self.calculateComp.setCMakeFile(cmake4Fprime.getComponentCMake("Calculate"))
-        self.executeComp.setCMakeFile(cmake4Fprime.getComponentCMake("Execute"))
+        self.executionComp.setCMakeFile(cmake4Fprime.getComponentCMake("Execution"))
     
     def loadCMakeDir(self):
         cmake4Fprime = CMake4Fprime()
@@ -632,7 +914,7 @@ class ReactiveArch:
         self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Core"))
         self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Calculate"))
         self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Control"))
-        self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Execute"))
+        self.CMakeDir.append(cmake4Fprime.getCompDirCMake("Execution"))
         return self.CMakeDir
     
     def loadConnections(self, sensorCompList, actionCompList):
@@ -645,7 +927,7 @@ class ReactiveArch:
         self.loadStart2Action2(actionCompList)
         self.loadDiagnose2Actions(actionCompList)
         self.loadCalculate2Actions(actionCompList)
-        self.loadExecute2Actions(actionCompList)
+        self.loadExecution2Actions(actionCompList)
         self.connectionList.append(self.task2StartConnection)
         self.connectionList.append(self.task2CollectConnection)
         self.connectionList.append(self.task2ProcessConnection)
@@ -669,7 +951,7 @@ class ReactiveArch:
             self.connectionList.append(i)
         for i in self.calculate2ActionConnections:
             self.connectionList.append(i)
-        for i in self.execute2ActionConnections:
+        for i in self.execution2ActionConnections:
             self.connectionList.append(i)
         return self.connectionList
     
@@ -683,7 +965,7 @@ class ReactiveArch:
         compList.append(self.coreComp)
         compList.append(self.calculateComp)
         compList.append(self.controlComp)
-        compList.append(self.executeComp)
+        compList.append(self.executionComp)
         for component in compList:
             print("  [component name]  :", component.name)
             print("  [os.listdir()]  :", os.listdir(projectDir))
@@ -752,32 +1034,37 @@ class BasicSoftware:
             self.actionCMakeDir.append(cmake4Fprime.getCompDirCMake(i.name))
         return self.actionCMakeDir
             
-    def loadArch(self, archName):
+    def loadArch(self, archName, baseID):
         if archName == 'reactive':
             reactiveArch = ReactiveArch()
             reactiveArch.setSensorCompList(self.sensorCompList)
             reactiveArch.setActionCompList(self.actionCompList)
             reactiveArch.loadSensorNameList()
             reactiveArch.loadActionNameList()
-            reactiveArch.setArchDirectory(r'./Template/Architecture/ReactiveArch')
+            reactiveArch.setArchDirectory(r'./Template/Architecture/Reactive4UnmannedVehicles')
             reactiveArch.loadStart()
             reactiveArch.loadTask()
             reactiveArch.loadCollect()
             reactiveArch.loadProcess()
             reactiveArch.loadDiagnose()
             reactiveArch.loadCore()
-            reactiveArch.loadCalculate()
+            reactiveArch.loadCalculate(self.sensorCompList, self.actionCompList)
             reactiveArch.loadControl()
-            reactiveArch.loadExecute()
+            reactiveArch.loadExecution()
             reactiveArch.loadConnections(self.sensorCompList.compList, self.actionCompList.compList)
-            reactiveArch.loadArchInstances()
+            reactiveArch.loadArchInstances(baseID)
             reactiveArch.loadCompCMake()
             reactiveArch.loadCMakeDir()
             self.archtecture = reactiveArch
         return self.archtecture
     
     
-
+class BaseID:
+    def __init__(self) -> None:
+        self.baseID = 19200
+    def getBaseID(self):
+        self.baseID += 256
+        return self.baseID
 
 
 if __name__ == '__main__':
@@ -788,23 +1075,71 @@ if __name__ == '__main__':
     sensorNameList = [component.name for component in sensorCompList.compList]
     actionNameList = [component.name for component in actionCompList.compList]
     
-    projectDir = '../ReactiveProject/Components/'
+    componentsDir = '../ReactiveProject/Components/'
     
+    baseID = BaseID()
+    basicSoftware.loadArch('reactive', baseID)
+    basicSoftware.archtecture.createInProject(componentsDir)
+    skeletonInstance = basicSoftware.archtecture.archInstanceList
     
-    basicSoftware.loadArch('reactive')
-    basicSoftware.archtecture.createInProject(projectDir)
+    compInstance = CompInstance()
     
     sensorComp = Component()
     sensorComp.setName("Find_Injured_Person")
     sensorComp.setSensorDataNames(["Find_People", "People_Position"])
     sensorComp.setSensorFppTmplPath(r'./Template/SensorTemplate/SensorFpp.tmpl')
-    sensorComp.createSensorComp(projectDir)
+    sensorComp.createSensorComp(componentsDir)
     
+    cmake4Fprime = CMake4Fprime()
+    compPath = os.path.join(componentsDir, sensorComp.name)
+    cmakePath = os.path.join(compPath, "CMakeLists.txt")
+    cmakeDirPath = os.path.join(componentsDir, "CMakeLists.txt")
+    with open(cmakePath, 'w') as f:
+        f.write(cmake4Fprime.getComponentCMake(sensorComp.name) + "\n")
+    with open(cmakeDirPath, 'a+') as f:
+        f.write(cmake4Fprime.getCompDirCMake(sensorComp.name) + "\n")
+    ins = compInstance.getPassiveCompInstance("find_injured_person", "Sensor", sensorComp.name, str(baseID.getBaseID()))
+    sensorInstanceList = [ins]
+    sensorInstanceNameList = ["find_injured_person"]
+        
+        
     actionComp = Component()
     actionComp.setName("Attack")
     actionComp.setActionDataNames(["Do_Attack", "Target_Position"])
     actionComp.setActionFppTmplPath(r'./Template/ActionTemplate/ActionFpp.tmpl')
-    actionComp.createActionComp(projectDir)
+    actionComp.createActionComp(componentsDir)
+    
+    cmake4Fprime = CMake4Fprime()
+    compPath = os.path.join(componentsDir, actionComp.name)
+    cmakePath = os.path.join(compPath, "CMakeLists.txt")
+    cmakeDirPath = os.path.join(componentsDir, "CMakeLists.txt")
+    with open(cmakePath, 'w') as f:
+        f.write(cmake4Fprime.getComponentCMake(actionComp.name) + "\n")
+    with open(cmakeDirPath, 'a+') as f:
+        f.write(cmake4Fprime.getCompDirCMake(actionComp.name) + "\n")
+    ins = compInstance.getPassiveCompInstance("attack", "Action", actionComp.name, str(baseID.getBaseID()))
+    actionInstanceList = [ins]
+    actionInstanceNameList = ["attack"]
+    
+    
+    
+    deploymentDir = '../ReactiveProject/ReactiveDeployment/'
+    topDir = os.path.join(deploymentDir, "Top")
+    instanceList = sensorInstanceList + actionInstanceList + skeletonInstance
+    # print(instanceList)
+    instancePath = os.path.join(topDir, "instances.fpp")
+    instanceFile = compInstance.getInstances(instanceList)
+    with open(instancePath, 'w') as f:
+        f.write(instanceFile)
+    
+    instanceNameList = sensorInstanceNameList + actionInstanceNameList + basicSoftware.archtecture.instanceNameList
+    connectionList = basicSoftware.archtecture.connectionList
+    compConnection = CompConnection()
+    connectionFile = compConnection.getConnectionFile(instanceNameList ,connectionList)
+    # print(connectionFile)
+    connectionPath = os.path.join(topDir, "topology.fpp")
+    with open(connectionPath, 'w') as f:
+        f.write(connectionFile)
     
     # print(sensorNameList)
     # print(actionNameList)

@@ -1,4 +1,4 @@
-module ReactiveArch {
+module Skeleton {
     @ Task component in skeleton
     active component Task {
         
@@ -12,7 +12,7 @@ module ReactiveArch {
 
         output port Diagnose_Outport: Diagnose_Port
 
-        output port Execute_Outport: Execute_Port
+        output port Execution_Outport: Execution_Port
 
 
         @ Port for requesting the current time

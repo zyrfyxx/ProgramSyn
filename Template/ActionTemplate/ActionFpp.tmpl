@@ -1,7 +1,7 @@
 module Action {
     port ${actionName}_Start_Port() -> U8
     port ${actionName}_Diagnose_Port() -> U8
-    port ${actionName}_Execute_Port() -> U8
+    port ${actionName}_Execution_Port() -> U8
     #for $DataName in $DataList
     port ${actionName}_DataSet_${DataName}_Port() -> U8
     #end for
@@ -10,9 +10,9 @@ module Action {
 
         sync input port ${actionName}_Start_Inport: ${actionName}_Start_Port
         sync input port ${actionName}_Diagnose_Inport: ${actionName}_Diagnose_Port
-        sync input port ${actionName}_Execute_Inport: ${actionName}_Execute_Port
+        sync input port ${actionName}_Execution_Inport: ${actionName}_Execution_Port
         #for $DataName in $DataList
-        sync input port ${actionName}_DataSet_${DataName}_Inport: ${actionName}_DateSet_${DataName}_Port
+        sync input port ${actionName}_DataSet_${DataName}_Inport: ${actionName}_DataSet_${DataName}_Port
         #end for
         
         @ Port for requesting the current time

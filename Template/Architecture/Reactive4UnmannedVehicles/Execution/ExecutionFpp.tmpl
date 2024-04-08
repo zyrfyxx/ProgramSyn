@@ -1,10 +1,13 @@
 module Skeleton {
-    port Calculate_Port() -> U8
-    @ Calculate component in skeleton
-    passive component Calculate {
+    port Execution_Port() -> U8;
+    @ Execution component in skeleton
+    passive component Execution {
+        
+        #for $component in $actionComps
+        output port ${component}_Execution_Outport: Action.${component}_Execution_Port
+        #end for
 
-
-        sync input port Calculate_Inport: Calculate_Port
+        sync input port Execution_Inport: Execution_Port
 
         @ Port for requesting the current time
         time get port timeCaller
@@ -18,9 +21,9 @@ module Skeleton {
         @ Port for sending telemetry channels to downlink
         telemetry port tlmOut
 
-        event CALCULATEALL()\
+        event EXECUTION()\
             severity activity low\
-            format "Calculate component start"
+            format "Execution Component Start"
 
     }
 }
